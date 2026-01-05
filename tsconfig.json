@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "DOM.Iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": "./src",
+    "target": "es5",
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "downlevelIteration": true
+  },
+  "include": [
+    "src"
+  ]
+}
+
