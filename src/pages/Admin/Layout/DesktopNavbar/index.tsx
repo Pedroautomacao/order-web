@@ -19,6 +19,7 @@ import {
   People as ClientsIcon,
   Person as UsersIcon,
   Receipt as FiscalIcon,
+  History as AuditIcon,
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
@@ -35,6 +36,7 @@ const menuItems = [
   { text: 'Produtos', icon: <ProductsIcon />, path: '/admin/products', permission: 'product:read' },
   { text: 'Clientes', icon: <ClientsIcon />, path: '/admin/clients', permission: 'client:read' },
   { text: 'Usuários', icon: <UsersIcon />, path: '/admin/users', permission: 'user:create' },
+  { text: 'Auditoria', icon: <AuditIcon />, path: '/admin/audit', permission: 'audit:read' },
 ]
 
 interface DesktopNavbarProps {

@@ -14,6 +14,7 @@ const routeByPermission: { permission: string; path: string }[] = [
   { permission: 'product:read', path: '/admin/products' },
   { permission: 'client:read', path: '/admin/clients' },
   { permission: 'user:create', path: '/admin/users' },
+  { permission: 'audit:read', path: '/admin/audit' },
 ]
 
 export const AdminDefaultRedirect = () => {

@@ -83,6 +83,7 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
     if (permissions.includes("product:read")) return "/admin/products";
     if (permissions.includes("client:read")) return "/admin/clients";
     if (permissions.includes("user:create")) return "/admin/users";
+    if (permissions.includes("audit:read")) return "/admin/audit";
     return "/admin/dashboard";
   };
 

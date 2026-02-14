@@ -12,6 +12,7 @@ import OrderDetail from 'pages/Admin/Orders/OrderDetail'
 import Fiscal from 'pages/Admin/Fiscal'
 import FiscalOrderDetail from 'pages/Admin/Fiscal/FiscalOrderDetail'
 import Users from 'pages/Admin/Users'
+import Audit from 'pages/Admin/Audit'
 import { IState } from 'store'
 import { PublicRoute } from './PublicRoute'
 import { PrivateRoute } from './PrivateRoute'
@@ -80,6 +81,14 @@ const Routes = () => {
             {
               path: 'users',
               element: <Users />,
+            },
+            {
+              path: 'audit',
+              element: (
+                <RequirePermissionOrRedirect permission="audit:read" fallbackTo="/admin">
+                  <Audit />
+                </RequirePermissionOrRedirect>
+              ),
             },
             {
               path: '',
