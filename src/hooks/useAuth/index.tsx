@@ -1,40 +1,52 @@
-import { FC, useContext, createContext, useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
-import cookies from 'js-cookie'
-import { jwtDecode } from 'jwt-decode'
+import { FC, useContext, createContext, useEffect, useRef } from "react";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 
-import { ILogin } from 'interfaces/IUser'
-import { IState } from 'store'
-import { api } from 'services/api'
-import { authenticationService } from 'services/authenticationService'
-import permissionsService from 'services/permissionsService'
-import { updateUser } from 'store/reducers/user/actions'
-import { usePopup } from '../usePopup'
+import { ILogin } from "interfaces/IUser";
+import { api } from "services/api";
+import { authenticationService } from "services/authenticationService";
+import permissionsService from "services/permissionsService";
+import { updateUser } from "store/reducers/user/actions";
+import { usePopup } from "../usePopup";
 
 type IUseAuth = {
-  signIn: (props: ILogin) => Promise<void>
-  signOut: () => void
-}
+  signIn: (props: ILogin) => Promise<void>;
+  signOut: () => void;
+};
 
-const AuthContext = createContext<IUseAuth>({} as IUseAuth)
+const AuthContext = createContext<IUseAuth>({} as IUseAuth);
 
 const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
-  const dispatch = useDispatch()
-  const { addPopup } = usePopup()
-  const navigate = useNavigate()
-  const { isAuthenticated } = useSelector<IState, IState['user']>(state => state.user)
+  const dispatch = useDispatch();
+  const { addPopup } = usePopup();
+  const navigate = useNavigate();
+  const refreshingRef = useRef(false);
 
-  console.log('AuthProvider rendering, isAuthenticated:', isAuthenticated)
-
-  const getRules = async (userId: number) => {
+  const refreshUserPermissions = async (): Promise<string[] | undefined> => {
+    if (refreshingRef.current) return undefined;
+    refreshingRef.current = true;
     try {
-      const data = await permissionsService.getCurrentUser(userId)
-      
+      const data = await permissionsService.getMe();
       const permissions = data.roles
-        ? data.roles.flatMap(role => role.permissions.map(p => p.code))
-        : []
-
+        ? (() => {
+            const codes: string[] = [];
+            for (const role of data.roles!) {
+              const hasMenuGroups =
+                role.menu_groups && role.menu_groups.length > 0;
+              if (hasMenuGroups) {
+                for (const g of role.menu_groups!) {
+                  const perms = g.permissions ?? [];
+                  for (const p of perms) codes.push(p.code);
+                }
+              } else {
+                for (const p of role.permissions) codes.push(p.code);
+              }
+            }
+            return [...new Set(codes)];
+          })()
+        : [];
       dispatch(
         updateUser({
           isAuthenticated: true,
@@ -42,71 +54,89 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
           isLoading: false,
           userId: data.id,
         }),
-      )
+      );
+      return permissions;
     } catch {
       dispatch(
         updateUser({
-          isAuthenticated: true,
+          isAuthenticated: false,
           userPermissions: [],
           isLoading: false,
           userId: 0,
         }),
-      )
+      );
       addPopup({
-        type: 'error',
-        title: 'Erro ao buscar informações do usuário',
-      })
+        type: "info",
+        title: "Token expirado ou inválido.",
+      });
+      navigate("/login");
+      return undefined;
+    } finally {
+      refreshingRef.current = false;
     }
-  }
+  };
+
+  const getDefaultPathForPermissions = (permissions: string[]): string => {
+    if (permissions.includes("dashboard:read")) return "/admin/dashboard";
+    if (permissions.includes("order:bill")) return "/admin/fiscal";
+    if (permissions.includes("order:read")) return "/admin/orders";
+    if (permissions.includes("product:read")) return "/admin/products";
+    if (permissions.includes("client:read")) return "/admin/clients";
+    if (permissions.includes("user:create")) return "/admin/users";
+    return "/admin/dashboard";
+  };
 
   const signIn = async (data: ILogin): Promise<void> => {
     try {
-      const { access_token, refresh_token } = await authenticationService.postLogin(data)
+      const { access_token, refresh_token } =
+        await authenticationService.postLogin(data);
 
-      const date = new Date()
-      date.setHours(date.getHours() + 6)
-      cookies.set('authToken', access_token, {
+      const date = new Date();
+      date.setHours(date.getHours() + 6);
+      cookies.set("authToken", access_token, {
         expires: date,
-      })
+      });
 
-      cookies.set('refreshToken', refresh_token, {
+      cookies.set("refreshToken", refresh_token, {
         expires: date,
-      })
+      });
 
       // @ts-ignore: Unreachable code error
       // eslint-disable-next-line dot-notation
-      api.instance.defaults.headers['Authorization'] = `Bearer ${access_token}`
+      api.instance.defaults.headers["Authorization"] = `Bearer ${access_token}`;
 
-      const decodedToken = jwtDecode(access_token) as any
-      const userId = parseInt(decodedToken.sub)
-
-      await getRules(userId)
+      const permissions = await refreshUserPermissions();
 
       addPopup({
-        type: 'success',
-        title: 'Logado com sucesso',
-      })
+        type: "success",
+        title: "Logado com sucesso",
+      });
 
-      navigate('/admin/dashboard')
+      if (permissions?.length) {
+        navigate(getDefaultPathForPermissions(permissions));
+      }
     } catch (error: any) {
-      if (error?.detail === 'Invalid credentials') {
+      if (error?.detail === "Invalid credentials") {
         addPopup({
-          type: 'error',
-          title: 'Credenciais inválidas',
-        })
-        return
+          type: "error",
+          title: "Credenciais inválidas",
+        });
+        return;
       }
 
       addPopup({
-        type: 'error',
-        title: error?.detail ?? error?.message ?? 'Ocorreu um erro, contate o administrador.',
-      })
+        type: "error",
+        title:
+          error?.detail ??
+          error?.message ??
+          "Ocorreu um erro, contate o administrador.",
+      });
     }
-  }
+  };
 
   const signOut = () => {
-    cookies.remove('authToken')
-    cookies.remove('refreshToken')
+    cookies.remove("authToken");
+    cookies.remove("refreshToken");
     dispatch(
       updateUser({
         isAuthenticated: false,
@@ -114,20 +144,20 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
         isLoading: false,
         userId: 0,
       }),
-    )
-    navigate('/login')
+    );
+    navigate("/login");
     // @ts-ignore: Unreachable code error
     // eslint-disable-next-line dot-notation
-    api.instance.defaults.headers['Authorization'] = ''
-  }
+    api.instance.defaults.headers["Authorization"] = "";
+  };
 
-  const verifyAuth = () => {
+  const verifyAuth = async () => {
     try {
-      const token = cookies.get('authToken')
+      const token = cookies.get("authToken");
       if (token) {
         try {
-          const decodedToken = jwtDecode(token) as any
-          const currentDate = new Date()
+          const decodedToken = jwtDecode(token) as any;
+          const currentDate = new Date();
 
           if (decodedToken.exp * 1000 < currentDate.getTime()) {
             dispatch(
@@ -137,20 +167,19 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
                 isLoading: false,
                 userId: 0,
               }),
-            )
-            cookies.remove('authToken')
-            cookies.remove('refreshToken')
-            return
+            );
+            cookies.remove("authToken");
+            cookies.remove("refreshToken");
+            return;
           }
 
           // @ts-ignore: Unreachable code error
           // eslint-disable-next-line dot-notation
-          api.instance.defaults.headers['Authorization'] = `Bearer ${token}`
+          api.instance.defaults.headers["Authorization"] = `Bearer ${token}`;
 
-          const userId = parseInt(decodedToken.sub)
-          getRules(userId)
+          await refreshUserPermissions();
         } catch (err) {
-          console.error('Error verifying token:', err)
+          console.error("Error verifying token:", err);
           dispatch(
             updateUser({
               isAuthenticated: false,
@@ -158,9 +187,9 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
               isLoading: false,
               userId: 0,
             }),
-          )
-          cookies.remove('authToken')
-          cookies.remove('refreshToken')
+          );
+          cookies.remove("authToken");
+          cookies.remove("refreshToken");
         }
       } else {
         dispatch(
@@ -170,10 +199,10 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
             isLoading: false,
             userId: 0,
           }),
-        )
+        );
       }
     } catch (error) {
-      console.error('Error in verifyAuth:', error)
+      console.error("Error in verifyAuth:", error);
       dispatch(
         updateUser({
           isAuthenticated: false,
@@ -181,20 +210,20 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
           isLoading: false,
           userId: 0,
         }),
-      )
+      );
     }
-  }
+  };
 
   useEffect(() => {
     try {
       api.setFuncions({
         addPopup: addPopup,
         signOut: signOut,
-      })
+      });
 
-      verifyAuth()
+      verifyAuth();
     } catch (error) {
-      console.error('Error in AuthProvider initialization:', error)
+      console.error("Error in AuthProvider initialization:", error);
       dispatch(
         updateUser({
           isAuthenticated: false,
@@ -202,20 +231,23 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
           isLoading: false,
           userId: 0,
         }),
-      )
+      );
     }
-  }, [])
+  }, []);
 
-  return <AuthContext.Provider value={{ signIn, signOut }}>{children}</AuthContext.Provider>
-}
+  return (
+    <AuthContext.Provider value={{ signIn, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
 const useAuth = () => {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider')
+    throw new Error("useAuth must be used within AuthProvider");
   }
-  return context
-}
+  return context;
+};
 
-export { AuthProvider, useAuth }
-
+export { AuthProvider, useAuth };

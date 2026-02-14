@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Container,
   Typography,
@@ -6,25 +6,38 @@ import {
   Button,
   Paper,
   CircularProgress,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material'
-import { Add as AddIcon } from '@mui/icons-material'
+import { Add as AddIcon, Search as SearchIcon } from '@mui/icons-material'
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid'
 
 import clientService from 'services/clientService'
 import { IClient } from 'interfaces/IClient'
 import { usePopup } from 'hooks/usePopup'
+import { useDebouncedSearch } from 'hooks/useDebounce'
 import ClientModal from './ClientModal'
 import ConfirmDialog from 'components/ConfirmDialog'
 
 import { useStyles } from './styles'
+import { DATA_GRID_LOCALE_TEXT } from 'constants/dataGridLocale'
 
 const Clients = () => {
   const classes = useStyles()
   const { addPopup } = usePopup()
+  const addPopupRef = useRef(addPopup)
+  addPopupRef.current = addPopup
+
   const [clients, setClients] = useState<IClient[]>([])
   const [loading, setLoading] = useState(true)
   const [openModal, setOpenModal] = useState(false)
   const [selectedClient, setSelectedClient] = useState<IClient | null>(null)
+  const [searchInput, setSearchInput, debouncedSearch] = useDebouncedSearch('', 300)
+  const [statusFilter, setStatusFilter] = useState<string>('')
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; clientId: number | null }>({
     open: false,
     clientId: null,
@@ -33,10 +46,12 @@ const Clients = () => {
   const loadClients = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await clientService.getClients()
+      const isActive =
+        statusFilter === 'active' ? true : statusFilter === 'inactive' ? false : undefined
+      const data = await clientService.getClients(debouncedSearch || undefined, isActive)
       setClients(data)
     } catch (error: any) {
-      addPopup({
+      addPopupRef.current({
         type: 'error',
         title: 'Erro ao carregar clientes',
         message: error?.detail || error?.message || 'Tente novamente mais tarde',
@@ -44,7 +59,7 @@ const Clients = () => {
     } finally {
       setLoading(false)
     }
-  }, [addPopup])
+  }, [debouncedSearch, statusFilter])
 
   useEffect(() => {
     loadClients()
@@ -105,6 +120,12 @@ const Clients = () => {
     { field: 'priority', headerName: 'Prioridade', width: 100 },
     { field: 'phone_number', headerName: 'Telefone', width: 150 },
     {
+      field: 'is_active',
+      headerName: 'Status',
+      width: 100,
+      valueGetter: (params) => (params.row.is_active ? 'Ativo' : 'Inativo'),
+    },
+    {
       field: 'actions',
       type: 'actions',
       headerName: 'Ações',
@@ -127,18 +148,49 @@ const Clients = () => {
   ]
 
   return (
-    <Container maxWidth="lg" className={classes.container}>
+    <Container maxWidth={false} className={classes.container} sx={{ width: '100%' }}>
       <Box className={classes.header}>
-        <Typography variant="h4" component="h1" className={classes.title}>
-          Clientes
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreate}
-        >
-          Novo Cliente
-        </Button>
+        <Box className={classes.headerRow}>
+          <Typography variant="h4" component="h1" className={classes.title}>
+            Clientes
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreate}
+          >
+            Novo Cliente
+          </Button>
+        </Box>
+        <Box className={classes.filtersRow}>
+          <TextField
+            size="small"
+            placeholder="Buscar por ID, nome ou CPF/CNPJ"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 320 }}
+          />
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel id="client-status-label">Status</InputLabel>
+            <Select
+              labelId="client-status-label"
+              label="Status"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="active">Ativo</MenuItem>
+              <MenuItem value="inactive">Inativo</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
       </Box>
 
       <Paper className={classes.tableContainer}>
@@ -147,19 +199,26 @@ const Clients = () => {
             <CircularProgress />
           </Box>
         ) : (
-          <DataGrid
-            rows={clients}
-            columns={columns}
-            getRowId={(row) => row.id}
-            pageSizeOptions={[10, 25, 50, 100]}
-            initialState={{
-              pagination: {
-                paginationModel: { pageSize: 25 },
-              },
-            }}
-            disableRowSelectionOnClick
-            autoHeight
-          />
+          <Box className={classes.gridWrapper} sx={{ width: '100%', minWidth: 0 }}>
+            <DataGrid
+              rows={clients}
+              columns={columns}
+              getRowId={(row) => row.id}
+              pageSizeOptions={[5, 10, 25, 50]}
+              localeText={DATA_GRID_LOCALE_TEXT}
+              initialState={{
+                pagination: {
+                  paginationModel: { pageSize: 10 },
+                },
+              }}
+              disableRowSelectionOnClick
+              autoHeight
+              sx={{
+                '& .MuiDataGrid-cell': { minWidth: 80 },
+                '& .MuiDataGrid-columnHeaders': { minWidth: 600 },
+              }}
+            />
+          </Box>
         )}
       </Paper>
 

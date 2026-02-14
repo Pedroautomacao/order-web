@@ -17,6 +17,8 @@ export class ApiService {
   private addPopup: any = null
   private signOut: any = null
   private isAuthError = false
+  private last403At = 0
+  private readonly FORBIDDEN_COOLDOWN_MS = 2000
 
   public setFuncions({ addPopup, signOut }: IApi) {
     this.addPopup = addPopup
@@ -46,9 +48,11 @@ export class ApiService {
       return response
     },
     (error: AxiosError<ErrorResponse>) => {
+      const isMeRequest = error.config?.url?.includes('/auth/me')
       if (
         error.response?.status === 401 &&
-        error.response.data?.detail !== 'No active account found with the given credentials'
+        error.response.data?.detail !== 'No active account found with the given credentials' &&
+        !isMeRequest
       ) {
         if (!this.isAuthError) {
           this.isAuthError = true
@@ -56,6 +60,21 @@ export class ApiService {
           this.addPopup({
             type: 'info',
             title: 'Token expirado ou inválido.',
+          })
+        }
+      }
+      if (error.response?.status === 403 && this.addPopup) {
+        const now = Date.now()
+        if (now - this.last403At >= this.FORBIDDEN_COOLDOWN_MS) {
+          this.last403At = now
+          const detail =
+            typeof error.response?.data === 'object' && error.response?.data?.detail
+              ? String(error.response.data.detail)
+              : 'Você não tem permissão para esta ação.'
+          this.addPopup({
+            type: 'error',
+            title: 'Sem permissão',
+            message: detail,
           })
         }
       }

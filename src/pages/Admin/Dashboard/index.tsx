@@ -51,8 +51,8 @@ const Dashboard = () => {
         Dashboard
       </Typography>
       <Box className={classes.content}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
+          <Grid item xs={12} sm={6} md={4}>
             <Paper className={classes.card}>
               <Typography variant="h6">Aguardando</Typography>
               <Typography variant="h4" className={classes.number}>
@@ -60,7 +60,7 @@ const Dashboard = () => {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <Paper className={classes.card}>
               <Typography variant="h6">Em Produção</Typography>
               <Typography variant="h4" className={classes.number}>
@@ -68,7 +68,7 @@ const Dashboard = () => {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <Paper className={classes.card}>
               <Typography variant="h6">Produzidos Hoje</Typography>
               <Typography variant="h4" className={classes.number}>
@@ -76,7 +76,7 @@ const Dashboard = () => {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <Paper className={classes.card}>
               <Typography variant="h6">Faturados</Typography>
               <Typography variant="h4" className={classes.number}>
@@ -84,7 +84,7 @@ const Dashboard = () => {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <Paper className={classes.card}>
               <Typography variant="h6">Cancelados</Typography>
               <Typography variant="h4" className={classes.number}>
@@ -92,7 +92,7 @@ const Dashboard = () => {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <Paper className={classes.card}>
               <Typography variant="h6">Produzindo Agora</Typography>
               <Typography variant="h4" className={classes.number}>
@@ -100,7 +100,7 @@ const Dashboard = () => {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <Paper className={classes.card}>
               <Typography variant="h6">Taxa de Conclusão Hoje</Typography>
               <Typography variant="h4" className={classes.number}>
@@ -108,7 +108,7 @@ const Dashboard = () => {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <Paper className={classes.card}>
               <Typography variant="h6">Pedidos Atrasados</Typography>
               <Typography variant="h4" className={classes.number}>
@@ -116,7 +116,7 @@ const Dashboard = () => {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <Paper className={classes.card}>
               <Typography variant="h6">Produzidos Não Faturados</Typography>
               <Typography variant="h4" className={classes.number}>

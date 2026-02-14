@@ -5,8 +5,11 @@ import { api as apiService, ApiService } from './api'
 class ProductService {
   constructor(private readonly api: ApiService) {}
 
-  public getProducts = async (): Promise<IProduct[]> => {
-    return this.api.get('/products')
+  public getProducts = async (search?: string, isActive?: boolean | null): Promise<IProduct[]> => {
+    const params: Record<string, string | boolean> = {}
+    if (search?.trim()) params.search = search.trim()
+    if (isActive !== undefined && isActive !== null) params.is_active = isActive
+    return this.api.get('/products', { params })
   }
 
   public getProduct = async (id: number): Promise<IProduct> => {

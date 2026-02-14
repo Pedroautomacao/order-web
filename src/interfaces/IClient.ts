@@ -6,6 +6,7 @@ export interface IClient {
   address: string
   phone_number: string
   observations: string | null
+  is_active: boolean
 }
 
 export interface IClientCreate {
@@ -15,6 +16,7 @@ export interface IClientCreate {
   address: string
   phoneNumber: string
   observations?: string
+  isActive?: boolean
 }
 
 export interface IClientUpdate {
@@ -24,5 +26,6 @@ export interface IClientUpdate {
   address?: string
   phoneNumber?: string
   observations?: string
+  isActive?: boolean
 }
 

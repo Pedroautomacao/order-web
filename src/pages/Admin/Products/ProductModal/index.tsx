@@ -14,6 +14,8 @@ import {
   Switch,
   Box,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material'
 import { useForm, Controller } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -40,6 +42,8 @@ const validationSchema = Yup.object({
 })
 
 const ProductModal = ({ open, onClose, onSave, product, units }: ProductModalProps) => {
+  const theme = useTheme()
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'))
   const { addPopup } = usePopup()
   const [loading, setLoading] = useState(false)
   const [loadingProduct, setLoadingProduct] = useState(false)
@@ -165,7 +169,7 @@ const ProductModal = ({ open, onClose, onSave, product, units }: ProductModalPro
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={fullScreen}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogTitle>{productData ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
         <DialogContent>

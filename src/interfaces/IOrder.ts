@@ -53,3 +53,27 @@ export enum OrderItemStatus {
   PRODUCED = 'Produced',
 }
 
+/** Rótulos em português para exibição do status do pedido */
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  [OrderStatus.AWAITING]: 'Aguardando',
+  [OrderStatus.PRODUCING]: 'Em produção',
+  [OrderStatus.PRODUCED]: 'Produzido',
+  [OrderStatus.BILLED]: 'Faturado',
+  [OrderStatus.CANCELED]: 'Cancelado',
+}
+
+/** Rótulos em português para exibição do status do item do pedido */
+export const ORDER_ITEM_STATUS_LABELS: Record<string, string> = {
+  [OrderItemStatus.AWAITING]: 'Aguardando',
+  [OrderItemStatus.PRODUCING]: 'Em produção',
+  [OrderItemStatus.PRODUCED]: 'Produzido',
+}
+
+export function getOrderStatusLabel(status: string): string {
+  return ORDER_STATUS_LABELS[status] ?? status
+}
+
+export function getOrderItemStatusLabel(status: string): string {
+  return ORDER_ITEM_STATUS_LABELS[status] ?? status
+}
+

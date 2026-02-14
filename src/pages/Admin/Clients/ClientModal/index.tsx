@@ -11,6 +11,10 @@ import {
   Select,
   MenuItem,
   Box,
+  FormControlLabel,
+  Switch,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material'
 import { useForm, Controller } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -43,9 +47,12 @@ const validationSchema = Yup.object({
   address: Yup.string().required('Endereço é obrigatório'),
   phoneNumber: Yup.string().required('Telefone é obrigatório'),
   observations: Yup.string().optional(),
+  isActive: Yup.boolean().optional(),
 })
 
 const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
+  const theme = useTheme()
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'))
   const { addPopup } = usePopup()
   const [loading, setLoading] = useState(false)
 
@@ -65,6 +72,7 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
       address: '',
       phoneNumber: '',
       observations: '',
+      isActive: true,
     },
   })
 
@@ -78,6 +86,7 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
         address: client.address,
         phoneNumber: client.phone_number,
         observations: client.observations || '',
+        isActive: client.is_active,
       }
     }
     return {
@@ -87,6 +96,7 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
       address: '',
       phoneNumber: '',
       observations: '',
+      isActive: true,
     }
   }, [client])
 
@@ -98,7 +108,8 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
       watchedValues.priority !== initialValues.priority ||
       watchedValues.address !== initialValues.address ||
       watchedValues.phoneNumber !== initialValues.phoneNumber ||
-      watchedValues.observations !== initialValues.observations
+      watchedValues.observations !== initialValues.observations ||
+      watchedValues.isActive !== initialValues.isActive
     )
   }, [watchedValues, initialValues, client])
 
@@ -114,6 +125,7 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
         address: client.address,
         phoneNumber: client.phone_number,
         observations: client.observations || '',
+        isActive: client.is_active,
       })
     } else {
       reset({
@@ -123,6 +135,7 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
         address: '',
         phoneNumber: '',
         observations: '',
+        isActive: true,
       })
     }
   }, [client, reset, open])
@@ -133,6 +146,7 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
       const dataToSend = {
         ...data,
         cpfCnpj: removeMask(data.cpfCnpj),
+        isActive: data.isActive ?? true,
       }
       if (client) {
         await clientService.updateClient(client.id, dataToSend as IClientUpdate)
@@ -160,7 +174,7 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={fullScreen}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogTitle>{client ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
         <DialogContent>
@@ -260,6 +274,22 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
                   rows={3}
                   error={!!errors.observations}
                   helperText={errors.observations?.message}
+                />
+              )}
+            />
+
+            <Controller
+              name="isActive"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={field.value ?? true}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                  }
+                  label={field.value ? 'Ativo' : 'Inativo'}
                 />
               )}
             />

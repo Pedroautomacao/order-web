@@ -5,8 +5,11 @@ import { api as apiService, ApiService } from './api'
 class ClientService {
   constructor(private readonly api: ApiService) {}
 
-  public getClients = async (): Promise<IClient[]> => {
-    return this.api.get('/clients')
+  public getClients = async (search?: string, isActive?: boolean | null): Promise<IClient[]> => {
+    const params: Record<string, string | boolean> = {}
+    if (search?.trim()) params.search = search.trim()
+    if (isActive !== undefined && isActive !== null) params.is_active = isActive
+    return this.api.get('/clients/', { params })
   }
 
   public getClient = async (id: number): Promise<IClient> => {

@@ -13,47 +13,46 @@ import {
   Select,
   MenuItem,
 } from '@mui/material'
-import { Add as AddIcon, Search as SearchIcon } from '@mui/icons-material'
+import { Add as AddIcon, Search as SearchIcon, Folder as MenuGroupIcon } from '@mui/icons-material'
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid'
 
-import productService from 'services/productService'
-import unitService from 'services/unitService'
-import { IProduct } from 'interfaces/IProduct'
-import { IUnitOfMeasure } from 'interfaces/IUnitOfMeasure'
+import userService from 'services/userService'
+import { IUser } from 'interfaces/IUser'
 import { usePopup } from 'hooks/usePopup'
 import { useDebouncedSearch } from 'hooks/useDebounce'
-import ProductModal from './ProductModal'
+import UserModal from './UserModal'
+import RoleMenuModal from './RoleMenuModal'
 import ConfirmDialog from 'components/ConfirmDialog'
 
 import { useStyles } from './styles'
 import { DATA_GRID_LOCALE_TEXT } from 'constants/dataGridLocale'
 
-const Products = () => {
+const Users = () => {
   const classes = useStyles()
   const { addPopup } = usePopup()
-  const [products, setProducts] = useState<IProduct[]>([])
-  const [units, setUnits] = useState<IUnitOfMeasure[]>([])
+  const [users, setUsers] = useState<IUser[]>([])
   const [loading, setLoading] = useState(true)
   const [openModal, setOpenModal] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null)
+  const [selectedUser, setSelectedUser] = useState<IUser | null>(null)
   const [searchInput, setSearchInput, debouncedSearch] = useDebouncedSearch('', 300)
   const [statusFilter, setStatusFilter] = useState<string>('')
-  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; productId: number | null }>({
+  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; userId: number | null }>({
     open: false,
-    productId: null,
+    userId: null,
   })
+  const [openRoleMenuModal, setOpenRoleMenuModal] = useState(false)
 
-  const loadProducts = useCallback(async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
       const isActive =
         statusFilter === 'active' ? true : statusFilter === 'inactive' ? false : undefined
-      const data = await productService.getProducts(debouncedSearch || undefined, isActive)
-      setProducts(data)
+      const data = await userService.getUsers(debouncedSearch || undefined, isActive)
+      setUsers(data)
     } catch (error: any) {
       addPopup({
         type: 'error',
-        title: 'Erro ao carregar produtos',
+        title: 'Erro ao carregar usuários',
         message: error?.detail || error?.message || 'Tente novamente mais tarde',
       })
     } finally {
@@ -61,89 +60,86 @@ const Products = () => {
     }
   }, [addPopup, debouncedSearch, statusFilter])
 
-  const loadUnits = useCallback(async () => {
-    try {
-      const data = await unitService.getUnits()
-      setUnits(data)
-    } catch (error: any) {
-      console.error('Erro ao carregar unidades:', error)
-    }
-  }, [])
-
   useEffect(() => {
-    loadProducts()
-    loadUnits()
-  }, [loadProducts, loadUnits])
+    loadUsers()
+  }, [loadUsers])
 
   const handleCreate = () => {
-    setSelectedProduct(null)
+    setSelectedUser(null)
     setOpenModal(true)
   }
 
-  const handleEdit = (product: IProduct) => {
-    setSelectedProduct(product)
+  const handleEdit = (user: IUser) => {
+    setSelectedUser(user)
     setOpenModal(true)
   }
 
   const handleDeleteClick = (id: number) => {
-    setConfirmDelete({ open: true, productId: id })
+    setConfirmDelete({ open: true, userId: id })
   }
 
   const handleDeleteConfirm = async () => {
-    if (!confirmDelete.productId) return
+    if (!confirmDelete.userId) return
 
     try {
-      await productService.deleteProduct(confirmDelete.productId)
+      await userService.deleteUser(confirmDelete.userId)
       addPopup({
         type: 'success',
-        title: 'Produto excluído com sucesso',
+        title: 'Usuário excluído com sucesso',
       })
-      loadProducts()
-      setConfirmDelete({ open: false, productId: null })
+      loadUsers()
+      setConfirmDelete({ open: false, userId: null })
     } catch (error: any) {
       addPopup({
         type: 'error',
-        title: 'Erro ao excluir produto',
+        title: 'Erro ao excluir usuário',
         message: error?.detail || error?.message || 'Tente novamente mais tarde',
       })
     }
   }
 
   const handleDeleteCancel = () => {
-    setConfirmDelete({ open: false, productId: null })
+    setConfirmDelete({ open: false, userId: null })
   }
 
   const handleCloseModal = () => {
     setOpenModal(false)
-    setSelectedProduct(null)
+    setSelectedUser(null)
   }
 
   const handleSave = () => {
-    loadProducts()
+    loadUsers()
     handleCloseModal()
   }
 
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'name', headerName: 'Nome', flex: 1, minWidth: 200 },
-    { field: 'sku', headerName: 'SKU', width: 150 },
+    { field: 'id', headerName: 'ID', width: 70 },
+    { field: 'username', headerName: 'Usuário', width: 130 },
     {
-      field: 'unit',
-      headerName: 'Unidade',
-      width: 150,
-      valueGetter: (params) => params.row.unit?.code || '-',
+      field: 'full_name',
+      headerName: 'Nome',
+      flex: 1,
+      minWidth: 180,
+      valueGetter: (params) => `${params.row.first_name || ''} ${params.row.last_name || ''}`.trim() || '-',
+    },
+    { field: 'email', headerName: 'E-mail', width: 200 },
+    {
+      field: 'roles',
+      headerName: 'Perfis',
+      width: 140,
+      valueGetter: (params) => (params.row.roles?.map((r: { name: string }) => r.name).join(', ') || '-'),
     },
     {
       field: 'is_active',
       headerName: 'Status',
-      width: 120,
+      width: 100,
       valueGetter: (params) => (params.row.is_active ? 'Ativo' : 'Desativado'),
     },
     {
       field: 'actions',
       type: 'actions',
       headerName: 'Ações',
-      width: 100,
+      width: 120,
       getActions: (params) => [
         <GridActionsCellItem
           key="edit"
@@ -166,20 +162,20 @@ const Products = () => {
       <Box className={classes.header}>
         <Box className={classes.headerRow}>
           <Typography variant="h4" component="h1" className={classes.title}>
-            Produtos
+            Usuários
           </Typography>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleCreate}
           >
-            Novo Produto
+            Novo Usuário
           </Button>
         </Box>
-        <Box className={classes.filtersRow}>
+        <Box className={classes.filtersRow} sx={{ width: '100%' }}>
           <TextField
             size="small"
-            placeholder="Buscar por ID, SKU ou nome"
+            placeholder="Buscar por ID ou nome"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             InputProps={{
@@ -192,9 +188,9 @@ const Products = () => {
             sx={{ minWidth: 320 }}
           />
           <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel id="product-status-label">Status</InputLabel>
+            <InputLabel id="user-status-label">Status</InputLabel>
             <Select
-              labelId="product-status-label"
+              labelId="user-status-label"
               label="Status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -204,6 +200,14 @@ const Products = () => {
               <MenuItem value="inactive">Inativo</MenuItem>
             </Select>
           </FormControl>
+          <Button
+            variant="outlined"
+            startIcon={<MenuGroupIcon />}
+            onClick={() => setOpenRoleMenuModal(true)}
+            sx={{ ml: 'auto' }}
+          >
+            Grupos de menu
+          </Button>
         </Box>
       </Box>
 
@@ -215,7 +219,7 @@ const Products = () => {
         ) : (
           <Box className={classes.gridWrapper} sx={{ width: '100%', minWidth: 0 }}>
             <DataGrid
-              rows={products}
+              rows={users}
               columns={columns}
               getRowId={(row) => row.id}
               pageSizeOptions={[5, 10, 25, 50]}
@@ -237,28 +241,31 @@ const Products = () => {
       </Paper>
 
       {openModal && (
-        <ProductModal
+        <UserModal
           open={openModal}
           onClose={handleCloseModal}
           onSave={handleSave}
-          product={selectedProduct}
-          units={units}
+          user={selectedUser}
         />
       )}
 
       <ConfirmDialog
         open={confirmDelete.open}
         title="Confirmar Exclusão"
-        message="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita."
+        message="Tem certeza que deseja excluir este usuário? Você não pode excluir seu próprio usuário."
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
         confirmText="Excluir"
         cancelText="Cancelar"
         confirmColor="error"
       />
+
+      <RoleMenuModal
+        open={openRoleMenuModal}
+        onClose={() => setOpenRoleMenuModal(false)}
+      />
     </Container>
   )
 }
 
-export default Products
-
+export default Users
