@@ -175,7 +175,7 @@ const Clients = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{ minWidth: 320 }}
+            sx={{ flexGrow: 1, minWidth: 200 }}
           />
           <FormControl size="small" sx={{ minWidth: 140 }}>
             <InputLabel id="client-status-label">Status</InputLabel>
@@ -215,7 +215,6 @@ const Clients = () => {
               autoHeight
               sx={{
                 '& .MuiDataGrid-cell': { minWidth: 80 },
-                '& .MuiDataGrid-columnHeaders': { minWidth: 600 },
               }}
             />
           </Box>

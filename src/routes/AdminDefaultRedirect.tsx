@@ -11,6 +11,8 @@ const routeByPermission: { permission: string; path: string }[] = [
   { permission: 'dashboard:read', path: '/admin/dashboard' },
   { permission: 'order:bill', path: '/admin/fiscal' },
   { permission: 'order:read', path: '/admin/orders' },
+  { permission: 'order:list', path: '/admin/seller' },
+  { permission: 'order:produce', path: '/admin/producer' },
   { permission: 'product:read', path: '/admin/products' },
   { permission: 'client:read', path: '/admin/clients' },
   { permission: 'user:create', path: '/admin/users' },

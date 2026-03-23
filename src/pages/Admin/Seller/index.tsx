@@ -34,15 +34,15 @@ import * as yup from 'yup'
 import orderService from 'services/orderService'
 import clientService from 'services/clientService'
 import productService from 'services/productService'
-import { IOrder, IOrderCreate, getOrderStatusLabel, ORDER_STATUS_LABELS } from 'interfaces/IOrder'
+import { IOrder, IOrderCreate, ORDER_STATUS_LABELS, getOrderStatusLabel } from 'interfaces/IOrder'
 import { IClient } from 'interfaces/IClient'
 import { IProduct } from 'interfaces/IProduct'
 import { usePopup } from 'hooks/usePopup'
 import { useDebouncedSearch } from 'hooks/useDebounce'
+import { DATA_GRID_LOCALE_TEXT } from 'constants/dataGridLocale'
 
 import { getMinOrderDate } from 'utils/orderDateUtils'
 import { useStyles } from './styles'
-import { DATA_GRID_LOCALE_TEXT } from 'constants/dataGridLocale'
 
 interface OrderFormValues {
   client: IClient | null
@@ -132,10 +132,11 @@ const ProductRow = ({ index, control, products, errors, fields, remove }: Produc
   )
 }
 
-const Orders = () => {
+const Seller = () => {
   const classes = useStyles()
   const navigate = useNavigate()
   const { addPopup } = usePopup()
+
   const [orders, setOrders] = useState<IOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [searchInput, setSearchInput, debouncedSearch] = useDebouncedSearch('', 300)
@@ -162,6 +163,26 @@ const Orders = () => {
   })
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' })
+
+  const loadOrders = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await orderService.getSellerOrders(debouncedSearch || undefined, statusFilter || undefined, scheduledDateFilter || undefined)
+      setOrders(data)
+    } catch (error: any) {
+      addPopup({
+        type: 'error',
+        title: 'Erro ao carregar pedidos',
+        message: error?.detail || error?.message || 'Tente novamente mais tarde',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [addPopup, debouncedSearch, statusFilter, scheduledDateFilter])
+
+  useEffect(() => {
+    loadOrders()
+  }, [loadOrders])
 
   const openModal = useCallback(async () => {
     try {
@@ -211,30 +232,6 @@ const Orders = () => {
     }
   }
 
-  const loadOrders = useCallback(async () => {
-    try {
-      setLoading(true)
-      const data = await orderService.getOrders(
-        debouncedSearch || undefined,
-        statusFilter || undefined,
-        scheduledDateFilter || undefined,
-      )
-      setOrders(data)
-    } catch (error: any) {
-      addPopup({
-        type: 'error',
-        title: 'Erro ao carregar pedidos',
-        message: error?.detail || error?.message || 'Tente novamente mais tarde',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }, [addPopup, debouncedSearch, statusFilter, scheduledDateFilter])
-
-  useEffect(() => {
-    loadOrders()
-  }, [loadOrders])
-
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-'
     return new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR')
@@ -258,7 +255,7 @@ const Orders = () => {
     {
       field: 'status',
       headerName: 'Status',
-      width: 120,
+      width: 140,
       valueGetter: (params) => getOrderStatusLabel(params.row.status),
     },
     {
@@ -276,7 +273,7 @@ const Orders = () => {
           key="view"
           icon={<ViewIcon />}
           label="Ver detalhes"
-          onClick={() => navigate(`/admin/orders/${params.row.id}`)}
+          onClick={() => navigate(`/admin/seller/orders/${params.row.id}`)}
         />,
       ],
     },
@@ -287,10 +284,10 @@ const Orders = () => {
       <Box className={classes.header}>
         <Box className={classes.headerRow}>
           <Typography variant="h4" component="h1" className={classes.title}>
-            Pedidos
+            Meus Pedidos
           </Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={openModal}>
-            Criar Pedido
+            Novo Pedido
           </Button>
         </Box>
         <Box className={classes.filtersRow}>
@@ -318,9 +315,9 @@ const Orders = () => {
             sx={{ minWidth: 160 }}
           />
           <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel id="order-status-label">Status</InputLabel>
+            <InputLabel id="seller-status-label">Status</InputLabel>
             <Select
-              labelId="order-status-label"
+              labelId="seller-status-label"
               label="Status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -349,11 +346,7 @@ const Orders = () => {
               getRowId={(row) => row.id}
               pageSizeOptions={[5, 10, 25, 50]}
               localeText={DATA_GRID_LOCALE_TEXT}
-              initialState={{
-                pagination: {
-                  paginationModel: { pageSize: 10 },
-                },
-              }}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
               disableRowSelectionOnClick
               autoHeight
               sx={{
@@ -363,9 +356,10 @@ const Orders = () => {
           </Box>
         )}
       </Paper>
+
       {/* Modal criar pedido */}
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Criar Pedido</DialogTitle>
+        <DialogTitle>Novo Pedido</DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
             <Controller
@@ -445,4 +439,4 @@ const Orders = () => {
   )
 }
 
-export default Orders
+export default Seller

@@ -189,7 +189,7 @@ const Products = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{ minWidth: 320 }}
+            sx={{ flexGrow: 1, minWidth: 200 }}
           />
           <FormControl size="small" sx={{ minWidth: 140 }}>
             <InputLabel id="product-status-label">Status</InputLabel>
@@ -229,7 +229,6 @@ const Products = () => {
               autoHeight
               sx={{
                 '& .MuiDataGrid-cell': { minWidth: 80 },
-                '& .MuiDataGrid-columnHeaders': { minWidth: 600 },
               }}
             />
           </Box>

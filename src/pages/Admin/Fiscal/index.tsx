@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Container,
   Typography,
@@ -32,11 +32,12 @@ const Fiscal = () => {
   const [loading, setLoading] = useState(true)
   const [searchInput, setSearchInput, debouncedSearch] = useDebouncedSearch('', 300)
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [scheduledDateFilter, setScheduledDateFilter] = useState<string>(new Date().toISOString().split('T')[0])
 
   const loadOrders = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await orderService.getFiscalOrders(debouncedSearch || undefined, statusFilter || undefined)
+      const data = await orderService.getFiscalOrders(debouncedSearch || undefined, statusFilter || undefined, scheduledDateFilter || undefined)
       setOrders(data)
     } catch (error: any) {
       addPopup({
@@ -47,16 +48,11 @@ const Fiscal = () => {
     } finally {
       setLoading(false)
     }
-  }, [addPopup, debouncedSearch])
+  }, [addPopup, debouncedSearch, statusFilter, scheduledDateFilter])
 
   useEffect(() => {
     loadOrders()
   }, [loadOrders])
-
-  const fiscalOrders = useMemo(() => {
-    if (!statusFilter) return orders
-    return orders.filter((o) => o.status === statusFilter)
-  }, [orders, statusFilter])
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-'
@@ -116,7 +112,7 @@ const Fiscal = () => {
         <Box className={classes.filtersRow}>
           <TextField
             size="small"
-            placeholder="Buscar por ID, cliente ou CNPJ"
+            placeholder="Buscar por ID, nome ou CPF/CNPJ"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             InputProps={{
@@ -126,7 +122,16 @@ const Fiscal = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{ minWidth: 320 }}
+            sx={{ flexGrow: 1, minWidth: 200 }}
+          />
+          <TextField
+            size="small"
+            label="Data de entrega"
+            type="date"
+            value={scheduledDateFilter}
+            onChange={(e) => setScheduledDateFilter(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: 160 }}
           />
           <FormControl size="small" sx={{ minWidth: 160 }}>
             <InputLabel id="fiscal-status-label">Status</InputLabel>
@@ -152,7 +157,7 @@ const Fiscal = () => {
         ) : (
           <Box className={classes.gridWrapper} sx={{ width: '100%', minWidth: 0 }}>
             <DataGrid
-              rows={fiscalOrders}
+              rows={orders}
               columns={columns}
               getRowId={(row) => row.id}
               pageSizeOptions={[5, 10, 25, 50]}
@@ -166,7 +171,6 @@ const Fiscal = () => {
               autoHeight
               sx={{
                 '& .MuiDataGrid-cell': { minWidth: 80 },
-                '& .MuiDataGrid-columnHeaders': { minWidth: 600 },
               }}
             />
           </Box>

@@ -3,39 +3,23 @@ import { Theme } from '@mui/material/styles'
 
 export const useStyles = makeStyles((theme: Theme) => ({
   container: {
-    width: '100%',
     marginTop: theme.spacing(4),
     marginBottom: theme.spacing(4),
     [theme.breakpoints.down('sm')]: {
       marginTop: theme.spacing(2),
       marginBottom: theme.spacing(2),
+      padding: theme.spacing(0, 1),
     },
   },
   header: {
     display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    gap: theme.spacing(2),
-    marginBottom: theme.spacing(3),
-    width: '100%',
-    [theme.breakpoints.down('sm')]: {
-      marginBottom: theme.spacing(2),
-    },
-  },
-  headerRow: {
-    display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-  },
-  filtersRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing(2),
-    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    marginBottom: theme.spacing(3),
+    gap: theme.spacing(1),
     [theme.breakpoints.down('sm')]: {
       flexDirection: 'column',
-      alignItems: 'stretch',
+      marginBottom: theme.spacing(2),
     },
   },
   title: {
@@ -44,17 +28,36 @@ export const useStyles = makeStyles((theme: Theme) => ({
       fontSize: '1.5rem',
     },
   },
-  tableContainer: {
-    padding: theme.spacing(2),
-    overflowX: 'auto',
+  actions: {
+    display: 'flex',
+    gap: theme.spacing(1),
+    flexShrink: 0,
     [theme.breakpoints.down('sm')]: {
-      padding: theme.spacing(1),
+      width: '100%',
+      justifyContent: 'flex-start',
     },
   },
-  gridWrapper: {
-    width: '100%',
-    overflowX: 'auto',
-    minWidth: 0,
+  paper: {
+    padding: theme.spacing(3),
+    marginBottom: theme.spacing(3),
+    [theme.breakpoints.down('sm')]: {
+      padding: theme.spacing(2),
+    },
+  },
+  sectionTitle: {
+    fontWeight: 600,
+    marginBottom: theme.spacing(2),
+  },
+  infoGrid: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: theme.spacing(3),
+    [theme.breakpoints.down('sm')]: {
+      gap: theme.spacing(2),
+    },
+  },
+  table: {
+    minWidth: 320,
   },
   loading: {
     display: 'flex',

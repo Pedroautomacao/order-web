@@ -12,6 +12,7 @@ export interface IOrder {
   assigned_user_id: number | null
   produced_items: IOrderItem[]
   current_item: IOrderItem | null
+  total_items: number
   can_finish: boolean
   client?: IClient
   created_by?: IUser
@@ -29,6 +30,12 @@ export interface IOrderItem {
 }
 
 export interface IOrderCreate {
+  clientId: number
+  scheduledDate: string
+  items: IOrderItemCreate[]
+}
+
+export interface IOrderUpdate {
   clientId: number
   scheduledDate: string
   items: IOrderItemCreate[]

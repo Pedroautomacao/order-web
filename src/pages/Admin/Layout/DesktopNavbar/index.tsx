@@ -20,6 +20,8 @@ import {
   Person as UsersIcon,
   Receipt as FiscalIcon,
   History as AuditIcon,
+  Storefront as SellerIcon,
+  Blender as ProducerIcon,
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
@@ -32,6 +34,8 @@ const drawerWidth = 240
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard', permission: 'dashboard:read' },
   { text: 'Pedidos', icon: <OrdersIcon />, path: '/admin/orders', permission: 'order:read' },
+  { text: 'Meus Pedidos', icon: <SellerIcon />, path: '/admin/seller', permission: 'order:list' },
+  { text: 'Produção', icon: <ProducerIcon />, path: '/admin/producer', permission: 'order:produce' },
   { text: 'Fiscal', icon: <FiscalIcon />, path: '/admin/fiscal', permission: 'order:bill' },
   { text: 'Produtos', icon: <ProductsIcon />, path: '/admin/products', permission: 'product:read' },
   { text: 'Clientes', icon: <ClientsIcon />, path: '/admin/clients', permission: 'client:read' },

@@ -9,8 +9,23 @@ interface IApi {
 }
 
 interface ErrorResponse {
-  detail?: string
+  detail?: string | Array<{ loc: string[]; msg: string; type: string }>
   message?: string
+}
+
+/**
+ * Normaliza erros da API para que `detail` seja sempre string.
+ * O FastAPI retorna `detail` como array quando há erros de validação Pydantic (422).
+ */
+function normalizeApiError(data: ErrorResponse | null | undefined): ErrorResponse {
+  if (!data) return { detail: 'Erro desconhecido' }
+  if (Array.isArray(data.detail)) {
+    return {
+      ...data,
+      detail: data.detail.map(e => e.msg ?? String(e)).join('; '),
+    }
+  }
+  return data as ErrorResponse
 }
 
 export class ApiService {
@@ -67,10 +82,10 @@ export class ApiService {
         const now = Date.now()
         if (now - this.last403At >= this.FORBIDDEN_COOLDOWN_MS) {
           this.last403At = now
-          const detail =
-            typeof error.response?.data === 'object' && error.response?.data?.detail
-              ? String(error.response.data.detail)
-              : 'Você não tem permissão para esta ação.'
+          const normalized = normalizeApiError(error.response?.data)
+          const detail = normalized?.detail
+            ? String(normalized.detail)
+            : 'Você não tem permissão para esta ação.'
           this.addPopup({
             type: 'error',
             title: 'Sem permissão',
@@ -88,7 +103,7 @@ export class ApiService {
       .then(x => x.data)
       .catch(err => {
         if (err?.message === 'Network Error') throw new Error('Network Error')
-        if (axios.isAxiosError(err)) throw err.response?.data
+        if (axios.isAxiosError(err)) throw normalizeApiError(err.response?.data)
 
         throw err
       })
@@ -100,7 +115,7 @@ export class ApiService {
       .then(x => x.data)
       .catch(err => {
         if (err?.message === 'Network Error') throw new Error('Network Error')
-        if (axios.isAxiosError(err)) throw err.response?.data
+        if (axios.isAxiosError(err)) throw normalizeApiError(err.response?.data)
         throw err
       })
   }
@@ -111,7 +126,7 @@ export class ApiService {
       .then(x => x.data)
       .catch(err => {
         if (err?.message === 'Network Error') throw new Error('Network Error')
-        if (axios.isAxiosError(err)) throw err.response?.data
+        if (axios.isAxiosError(err)) throw normalizeApiError(err.response?.data)
         throw err
       })
   }
@@ -122,7 +137,7 @@ export class ApiService {
       .then(x => x.data)
       .catch(err => {
         if (err?.message === 'Network Error') throw new Error('Network Error')
-        if (axios.isAxiosError(err)) throw err.response?.data
+        if (axios.isAxiosError(err)) throw normalizeApiError(err.response?.data)
         throw err
       })
   }
@@ -133,7 +148,7 @@ export class ApiService {
       .then(x => x.data)
       .catch(err => {
         if (err?.message === 'Network Error') throw new Error('Network Error')
-        if (axios.isAxiosError(err)) throw err.response?.data
+        if (axios.isAxiosError(err)) throw normalizeApiError(err.response?.data)
         throw err
       })
   }

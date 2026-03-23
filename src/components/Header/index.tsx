@@ -42,7 +42,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             aria-label="open drawer"
             edge="start"
             onClick={onMenuClick}
-            sx={{ mr: 2 }}
+            sx={{ mr: 2, display: { xs: 'flex', md: 'none' } }}
           >
             <MenuIcon />
           </IconButton>

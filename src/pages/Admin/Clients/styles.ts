@@ -33,6 +33,10 @@ export const useStyles = makeStyles((theme: Theme) => ({
     alignItems: 'center',
     gap: theme.spacing(2),
     flexWrap: 'wrap',
+    [theme.breakpoints.down('sm')]: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+    },
   },
   title: {
     fontWeight: 600,

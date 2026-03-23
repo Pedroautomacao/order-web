@@ -3,7 +3,7 @@ import { Theme } from '@mui/material/styles'
 
 export const useStyles = makeStyles((theme: Theme) => ({
   drawer: {
-    width: 240,
+    width: 0,
     flexShrink: 0,
     [theme.breakpoints.up('md')]: {
       width: 240,

@@ -11,6 +11,9 @@ import Orders from 'pages/Admin/Orders'
 import OrderDetail from 'pages/Admin/Orders/OrderDetail'
 import Fiscal from 'pages/Admin/Fiscal'
 import FiscalOrderDetail from 'pages/Admin/Fiscal/FiscalOrderDetail'
+import Seller from 'pages/Admin/Seller'
+import SellerOrderDetail from 'pages/Admin/Seller/SellerOrderDetail'
+import Producer from 'pages/Admin/Producer'
 import Users from 'pages/Admin/Users'
 import Audit from 'pages/Admin/Audit'
 import { IState } from 'store'
@@ -56,31 +59,83 @@ const Routes = () => {
             },
             {
               path: 'products',
-              element: <Products />,
+              element: (
+                <RequirePermissionOrRedirect permission="product:read" fallbackTo="/admin">
+                  <Products />
+                </RequirePermissionOrRedirect>
+              ),
             },
             {
               path: 'clients',
-              element: <Clients />,
+              element: (
+                <RequirePermissionOrRedirect permission="client:read" fallbackTo="/admin">
+                  <Clients />
+                </RequirePermissionOrRedirect>
+              ),
             },
             {
               path: 'orders',
-              element: <Orders />,
+              element: (
+                <RequirePermissionOrRedirect permission="order:read" fallbackTo="/admin">
+                  <Orders />
+                </RequirePermissionOrRedirect>
+              ),
             },
             {
               path: 'orders/:id',
-              element: <OrderDetail />,
+              element: (
+                <RequirePermissionOrRedirect permission="order:read" fallbackTo="/admin/orders">
+                  <OrderDetail />
+                </RequirePermissionOrRedirect>
+              ),
             },
             {
               path: 'fiscal',
-              element: <Fiscal />,
+              element: (
+                <RequirePermissionOrRedirect permission="order:bill" fallbackTo="/admin">
+                  <Fiscal />
+                </RequirePermissionOrRedirect>
+              ),
             },
             {
               path: 'fiscal/orders/:id',
-              element: <FiscalOrderDetail />,
+              element: (
+                <RequirePermissionOrRedirect permission="order:bill" fallbackTo="/admin/fiscal">
+                  <FiscalOrderDetail />
+                </RequirePermissionOrRedirect>
+              ),
+            },
+            {
+              path: 'seller',
+              element: (
+                <RequirePermissionOrRedirect permission="order:list" fallbackTo="/admin">
+                  <Seller />
+                </RequirePermissionOrRedirect>
+              ),
+            },
+            {
+              path: 'seller/orders/:id',
+              element: (
+                <RequirePermissionOrRedirect permission="order:list" fallbackTo="/admin/seller">
+                  <SellerOrderDetail />
+                </RequirePermissionOrRedirect>
+              ),
+            },
+            {
+              path: 'producer',
+              element: (
+                <RequirePermissionOrRedirect permission="order:produce" fallbackTo="/admin">
+                  <Producer />
+                </RequirePermissionOrRedirect>
+              ),
             },
             {
               path: 'users',
-              element: <Users />,
+              element: (
+                <RequirePermissionOrRedirect permission="user:create" fallbackTo="/admin">
+                  <Users />
+                </RequirePermissionOrRedirect>
+              ),
             },
             {
               path: 'audit',
