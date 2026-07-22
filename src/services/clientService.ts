@@ -1,4 +1,4 @@
-import { IClient, IClientCreate, IClientUpdate } from 'interfaces/IClient'
+import { IClient, IClientCreate, IClientUpdate, IClientCredit } from 'interfaces/IClient'
 
 import { api as apiService, ApiService } from './api'
 
@@ -14,6 +14,11 @@ class ClientService {
 
   public getClient = async (id: number): Promise<IClient> => {
     return this.api.get(`/clients/${id}`)
+  }
+
+  /** Situação de crédito do cliente (limite, em aberto, disponível). */
+  public getClientCredit = async (id: number): Promise<IClientCredit> => {
+    return this.api.get(`/clients/${id}/credit`)
   }
 
   public createClient = async (data: IClientCreate): Promise<IClient> => {

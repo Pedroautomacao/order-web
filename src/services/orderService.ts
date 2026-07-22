@@ -35,6 +35,11 @@ class OrderService {
     return this.api.post('/orders', data)
   }
 
+  /** Marca um pedido como pago (somente admin — order:mark_paid). */
+  public markOrderPaid = async (id: number): Promise<IOrder> => {
+    return this.api.patch(`/orders/${id}/pay`, {})
+  }
+
   /** Lista pedidos criados pelo vendedor logado. */
   public getSellerOrders = async (search?: string, status?: string, scheduledDate?: string): Promise<IOrder[]> => {
     const params: Record<string, string> = {}

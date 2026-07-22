@@ -13,6 +13,8 @@ import Fiscal from 'pages/Admin/Fiscal'
 import FiscalOrderDetail from 'pages/Admin/Fiscal/FiscalOrderDetail'
 import Seller from 'pages/Admin/Seller'
 import SellerOrderDetail from 'pages/Admin/Seller/SellerOrderDetail'
+import Catalog from 'pages/Admin/Catalog'
+import Analytics from 'pages/Admin/Analytics'
 import Producer from 'pages/Admin/Producer'
 import Users from 'pages/Admin/Users'
 import Audit from 'pages/Admin/Audit'
@@ -122,6 +124,14 @@ const Routes = () => {
               ),
             },
             {
+              path: 'catalog',
+              element: (
+                <RequirePermissionOrRedirect permission="order:list" fallbackTo="/admin">
+                  <Catalog />
+                </RequirePermissionOrRedirect>
+              ),
+            },
+            {
               path: 'producer',
               element: (
                 <RequirePermissionOrRedirect permission="order:produce" fallbackTo="/admin">
@@ -142,6 +152,14 @@ const Routes = () => {
               element: (
                 <RequirePermissionOrRedirect permission="audit:read" fallbackTo="/admin">
                   <Audit />
+                </RequirePermissionOrRedirect>
+              ),
+            },
+            {
+              path: 'analytics',
+              element: (
+                <RequirePermissionOrRedirect permission="analytics:read" fallbackTo="/admin">
+                  <Analytics />
                 </RequirePermissionOrRedirect>
               ),
             },

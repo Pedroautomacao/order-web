@@ -7,8 +7,7 @@ import reducers from 'store'
 import { Theme } from 'theme'
 import { AuthProvider } from 'hooks/useAuth'
 import { PopupProvider } from 'hooks/usePopup'
-import Alert from 'components/Alert'
-import { ErrorBoundary } from 'components/ErrorBoundary'
+import { Alert, ErrorBoundary } from 'shared'
 
 const store = createStore(reducers)
 

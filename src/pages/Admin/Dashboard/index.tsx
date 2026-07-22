@@ -1,12 +1,31 @@
 import { useState, useEffect } from 'react'
-import { Container, Typography, Box, Grid, Paper, CircularProgress } from '@mui/material'
+import { Grid, Box } from '@mui/material'
+import {
+  HourglassEmpty,
+  Factory,
+  CheckCircle,
+  Payments,
+  Cancel,
+  PrecisionManufacturing,
+  TrendingUp,
+  Warning,
+  Inventory2,
+} from '@mui/icons-material'
 
 import dashboardService, { IDashboardOverview } from 'services/dashboardService'
 import { usePopup } from 'hooks/usePopup'
-import { useStyles } from './styles'
+import { PageLayout, PageHeader, KpiCard, LoadingState, BarChart } from 'shared'
+import type { KpiTone, BarChartPoint } from 'shared'
+
+const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
+const toChartData = (data: IDashboardOverview): BarChartPoint[] =>
+  (data.orders_by_day ?? []).map((p) => {
+    const d = new Date(p.date + 'T00:00:00')
+    return { label: WEEKDAYS[d.getDay()], value: p.count }
+  })
 
 const Dashboard = () => {
-  const classes = useStyles()
   const { addPopup } = usePopup()
   const [data, setData] = useState<IDashboardOverview | null>(null)
   const [loading, setLoading] = useState(true)
@@ -15,8 +34,7 @@ const Dashboard = () => {
     const loadData = async () => {
       try {
         setLoading(true)
-        const dashboardData = await dashboardService.getOverview()
-        setData(dashboardData)
+        setData(await dashboardService.getOverview())
       } catch (error: any) {
         addPopup({
           type: 'error',
@@ -27,108 +45,45 @@ const Dashboard = () => {
         setLoading(false)
       }
     }
-
     loadData()
   }, [addPopup])
 
-  if (loading) {
-    return (
-      <Container maxWidth="lg" className={classes.container}>
-        <Box className={classes.loading}>
-          <CircularProgress />
-        </Box>
-      </Container>
-    )
-  }
-
-  if (!data) {
-    return null
-  }
+  const kpis: { label: string; value: React.ReactNode; icon: React.ReactNode; tone: KpiTone }[] =
+    data
+      ? [
+          { label: 'Aguardando', value: data.orders_today.awaiting, icon: <HourglassEmpty />, tone: 'neutral' },
+          { label: 'Em Produção', value: data.orders_today.producing, icon: <Factory />, tone: 'warning' },
+          { label: 'Produzidos Hoje', value: data.orders_today.produced, icon: <CheckCircle />, tone: 'success' },
+          { label: 'Faturados', value: data.orders_today.billed, icon: <Payments />, tone: 'info' },
+          { label: 'Cancelados', value: data.orders_today.canceled, icon: <Cancel />, tone: 'error' },
+          { label: 'Produzindo Agora', value: data.producing_now, icon: <PrecisionManufacturing />, tone: 'primary' },
+          { label: 'Taxa de Conclusão Hoje', value: `${data.completion_rate_today.toFixed(1)}%`, icon: <TrendingUp />, tone: 'success' },
+          { label: 'Pedidos Atrasados', value: data.overdue_orders, icon: <Warning />, tone: 'error' },
+          { label: 'Produzidos Não Faturados', value: data.produced_not_billed, icon: <Inventory2 />, tone: 'info' },
+        ]
+      : []
 
   return (
-    <Container maxWidth="lg" className={classes.container}>
-      <Typography variant="h4" component="h1" className={classes.title}>
-        Dashboard
-      </Typography>
-      <Box className={classes.content}>
-        <Grid container spacing={{ xs: 2, sm: 3 }}>
-          <Grid item xs={12} sm={6} md={4}>
-            <Paper className={classes.card}>
-              <Typography variant="h6">Aguardando</Typography>
-              <Typography variant="h4" className={classes.number}>
-                {data.orders_today.awaiting}
-              </Typography>
-            </Paper>
+    <PageLayout maxWidth={1200}>
+      <PageHeader title="Dashboard" />
+      {loading || !data ? (
+        <LoadingState />
+      ) : (
+        <>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
+            {kpis.map((kpi) => (
+              <Grid item xs={12} sm={6} md={4} key={kpi.label}>
+                <KpiCard label={kpi.label} value={kpi.value} icon={kpi.icon} tone={kpi.tone} />
+              </Grid>
+            ))}
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <Paper className={classes.card}>
-              <Typography variant="h6">Em Produção</Typography>
-              <Typography variant="h4" className={classes.number}>
-                {data.orders_today.producing}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <Paper className={classes.card}>
-              <Typography variant="h6">Produzidos Hoje</Typography>
-              <Typography variant="h4" className={classes.number}>
-                {data.orders_today.produced}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <Paper className={classes.card}>
-              <Typography variant="h6">Faturados</Typography>
-              <Typography variant="h4" className={classes.number}>
-                {data.orders_today.billed}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <Paper className={classes.card}>
-              <Typography variant="h6">Cancelados</Typography>
-              <Typography variant="h4" className={classes.number}>
-                {data.orders_today.canceled}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <Paper className={classes.card}>
-              <Typography variant="h6">Produzindo Agora</Typography>
-              <Typography variant="h4" className={classes.number}>
-                {data.producing_now}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <Paper className={classes.card}>
-              <Typography variant="h6">Taxa de Conclusão Hoje</Typography>
-              <Typography variant="h4" className={classes.number}>
-                {data.completion_rate_today.toFixed(1)}%
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <Paper className={classes.card}>
-              <Typography variant="h6">Pedidos Atrasados</Typography>
-              <Typography variant="h4" className={classes.number}>
-                {data.overdue_orders}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <Paper className={classes.card}>
-              <Typography variant="h6">Produzidos Não Faturados</Typography>
-              <Typography variant="h4" className={classes.number}>
-                {data.produced_not_billed}
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
-      </Box>
-    </Container>
+          <Box sx={{ mt: 3 }}>
+            <BarChart title="Pedidos por dia (últimos 7 dias)" data={toChartData(data)} />
+          </Box>
+        </>
+      )}
+    </PageLayout>
   )
 }
 
 export default Dashboard
-

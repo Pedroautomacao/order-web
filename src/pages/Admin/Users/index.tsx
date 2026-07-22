@@ -1,20 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Button } from '@mui/material'
 import {
-  Container,
-  Typography,
-  Box,
-  Button,
-  Paper,
-  CircularProgress,
-  TextField,
-  InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-} from '@mui/material'
-import { Add as AddIcon, Search as SearchIcon, Folder as MenuGroupIcon } from '@mui/icons-material'
-import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid'
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Folder as MenuGroupIcon,
+} from '@mui/icons-material'
+import { GridColDef, GridActionsCellItem } from '@mui/x-data-grid'
 
 import userService from 'services/userService'
 import { IUser } from 'interfaces/IUser'
@@ -22,20 +14,23 @@ import { usePopup } from 'hooks/usePopup'
 import { useDebouncedSearch } from 'hooks/useDebounce'
 import UserModal from './UserModal'
 import RoleMenuModal from './RoleMenuModal'
-import ConfirmDialog from 'components/ConfirmDialog'
-
-import { useStyles } from './styles'
-import { DATA_GRID_LOCALE_TEXT } from 'constants/dataGridLocale'
+import {
+  PageLayout,
+  PageHeader,
+  DataTable,
+  ConfirmDialog,
+  SearchField,
+  SelectField,
+} from 'shared'
 
 const Users = () => {
-  const classes = useStyles()
   const { addPopup } = usePopup()
   const [users, setUsers] = useState<IUser[]>([])
   const [loading, setLoading] = useState(true)
   const [openModal, setOpenModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null)
   const [searchInput, setSearchInput, debouncedSearch] = useDebouncedSearch('', 300)
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; userId: number | null }>({
     open: false,
     userId: null,
@@ -47,8 +42,7 @@ const Users = () => {
       setLoading(true)
       const isActive =
         statusFilter === 'active' ? true : statusFilter === 'inactive' ? false : undefined
-      const data = await userService.getUsers(debouncedSearch || undefined, isActive)
-      setUsers(data)
+      setUsers(await userService.getUsers(debouncedSearch || undefined, isActive))
     } catch (error: any) {
       addPopup({
         type: 'error',
@@ -68,25 +62,24 @@ const Users = () => {
     setSelectedUser(null)
     setOpenModal(true)
   }
-
   const handleEdit = (user: IUser) => {
     setSelectedUser(user)
     setOpenModal(true)
   }
-
-  const handleDeleteClick = (id: number) => {
-    setConfirmDelete({ open: true, userId: id })
+  const handleCloseModal = () => {
+    setOpenModal(false)
+    setSelectedUser(null)
+  }
+  const handleSave = () => {
+    loadUsers()
+    handleCloseModal()
   }
 
   const handleDeleteConfirm = async () => {
     if (!confirmDelete.userId) return
-
     try {
       await userService.deleteUser(confirmDelete.userId)
-      addPopup({
-        type: 'success',
-        title: 'Usuário excluído com sucesso',
-      })
+      addPopup({ type: 'success', title: 'Usuário excluído com sucesso' })
       loadUsers()
       setConfirmDelete({ open: false, userId: null })
     } catch (error: any) {
@@ -98,20 +91,6 @@ const Users = () => {
     }
   }
 
-  const handleDeleteCancel = () => {
-    setConfirmDelete({ open: false, userId: null })
-  }
-
-  const handleCloseModal = () => {
-    setOpenModal(false)
-    setSelectedUser(null)
-  }
-
-  const handleSave = () => {
-    loadUsers()
-    handleCloseModal()
-  }
-
   const columns: GridColDef[] = [
     { field: 'id', headerName: 'ID', width: 70 },
     { field: 'username', headerName: 'Usuário', width: 130 },
@@ -120,14 +99,15 @@ const Users = () => {
       headerName: 'Nome',
       flex: 1,
       minWidth: 180,
-      valueGetter: (params) => `${params.row.first_name || ''} ${params.row.last_name || ''}`.trim() || '-',
+      valueGetter: (params) =>
+        `${params.row.first_name || ''} ${params.row.last_name || ''}`.trim() || '-',
     },
     { field: 'email', headerName: 'E-mail', width: 200 },
     {
       field: 'roles',
       headerName: 'Perfis',
-      width: 140,
-      valueGetter: (params) => (params.row.roles?.map((r: { name: string }) => r.name).join(', ') || '-'),
+      width: 150,
+      valueGetter: (params) => params.row.roles?.map((r: { name: string }) => r.name).join(', ') || '-',
     },
     {
       field: 'is_active',
@@ -139,113 +119,72 @@ const Users = () => {
       field: 'actions',
       type: 'actions',
       headerName: 'Ações',
-      width: 120,
+      width: 110,
       getActions: (params) => [
         <GridActionsCellItem
           key="edit"
-          icon={<span>✏️</span>}
+          icon={<EditIcon />}
           label="Editar"
           onClick={() => handleEdit(params.row)}
         />,
         <GridActionsCellItem
           key="delete"
-          icon={<span>🗑️</span>}
+          icon={<DeleteIcon />}
           label="Excluir"
-          onClick={() => handleDeleteClick(params.row.id)}
+          onClick={() => setConfirmDelete({ open: true, userId: params.row.id })}
         />,
       ],
     },
   ]
 
   return (
-    <Container maxWidth={false} className={classes.container} sx={{ width: '100%' }}>
-      <Box className={classes.header}>
-        <Box className={classes.headerRow}>
-          <Typography variant="h4" component="h1" className={classes.title}>
-            Usuários
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleCreate}
-          >
+    <PageLayout>
+      <PageHeader
+        title="Usuários"
+        action={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreate}>
             Novo Usuário
           </Button>
-        </Box>
-        <Box className={classes.filtersRow} sx={{ width: '100%' }}>
-          <TextField
-            size="small"
-            placeholder="Buscar por ID ou nome"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ flexGrow: 1, minWidth: 200 }}
-          />
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel id="user-status-label">Status</InputLabel>
-            <Select
-              labelId="user-status-label"
+        }
+        filters={
+          <>
+            <SearchField
+              value={searchInput}
+              onChange={setSearchInput}
+              placeholder="Buscar por ID ou nome"
+            />
+            <SelectField
               label="Status"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <MenuItem value="">Todos</MenuItem>
-              <MenuItem value="active">Ativo</MenuItem>
-              <MenuItem value="inactive">Inativo</MenuItem>
-            </Select>
-          </FormControl>
-          <Button
-            variant="outlined"
-            startIcon={<MenuGroupIcon />}
-            onClick={() => setOpenRoleMenuModal(true)}
-            sx={{ ml: 'auto' }}
-          >
-            Grupos de menu
-          </Button>
-        </Box>
-      </Box>
-
-      <Paper className={classes.tableContainer}>
-        {loading ? (
-          <Box className={classes.loading}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Box className={classes.gridWrapper} sx={{ width: '100%', minWidth: 0 }}>
-            <DataGrid
-              rows={users}
-              columns={columns}
-              getRowId={(row) => row.id}
-              pageSizeOptions={[5, 10, 25, 50]}
-              localeText={DATA_GRID_LOCALE_TEXT}
-              initialState={{
-                pagination: {
-                  paginationModel: { pageSize: 10 },
-                },
-              }}
-              disableRowSelectionOnClick
-              autoHeight
-              sx={{
-                '& .MuiDataGrid-cell': { minWidth: 80 },
-              }}
+              onChange={setStatusFilter}
+              options={[
+                { value: '', label: 'Todos' },
+                { value: 'active', label: 'Ativo' },
+                { value: 'inactive', label: 'Inativo' },
+              ]}
             />
-          </Box>
-        )}
-      </Paper>
+            <Button
+              variant="outlined"
+              startIcon={<MenuGroupIcon />}
+              onClick={() => setOpenRoleMenuModal(true)}
+              sx={{ ml: { sm: 'auto' } }}
+            >
+              Grupos de menu
+            </Button>
+          </>
+        }
+      />
+
+      <DataTable<IUser>
+        rows={users}
+        columns={columns}
+        getRowId={(row) => row.id}
+        loading={loading}
+        emptyTitle="Nenhum usuário encontrado"
+      />
 
       {openModal && (
-        <UserModal
-          open={openModal}
-          onClose={handleCloseModal}
-          onSave={handleSave}
-          user={selectedUser}
-        />
+        <UserModal open={openModal} onClose={handleCloseModal} onSave={handleSave} user={selectedUser} />
       )}
 
       <ConfirmDialog
@@ -253,17 +192,14 @@ const Users = () => {
         title="Confirmar Exclusão"
         message="Tem certeza que deseja excluir este usuário? Você não pode excluir seu próprio usuário."
         onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
+        onCancel={() => setConfirmDelete({ open: false, userId: null })}
         confirmText="Excluir"
         cancelText="Cancelar"
         confirmColor="error"
       />
 
-      <RoleMenuModal
-        open={openRoleMenuModal}
-        onClose={() => setOpenRoleMenuModal(false)}
-      />
-    </Container>
+      <RoleMenuModal open={openRoleMenuModal} onClose={() => setOpenRoleMenuModal(false)} />
+    </PageLayout>
   )
 }
 

@@ -109,5 +109,6 @@ export const PERMISSION_LABELS_PT: Record<string, string> = {
   'user:delete': 'Excluir usuário',
   'audit:read': 'Visualizar logs de auditoria',
   'dashboard:read': 'Visualizar dashboard',
+  'analytics:read': 'Visualizar relatórios',
 }
 

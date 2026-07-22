@@ -1,33 +1,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import {
-  Container,
-  Typography,
-  Box,
-  Button,
-  Paper,
-  CircularProgress,
-  TextField,
-  InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-} from '@mui/material'
-import { Add as AddIcon, Search as SearchIcon } from '@mui/icons-material'
-import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid'
+import { Button } from '@mui/material'
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material'
+import { GridColDef, GridActionsCellItem } from '@mui/x-data-grid'
 
 import clientService from 'services/clientService'
 import { IClient } from 'interfaces/IClient'
 import { usePopup } from 'hooks/usePopup'
 import { useDebouncedSearch } from 'hooks/useDebounce'
 import ClientModal from './ClientModal'
-import ConfirmDialog from 'components/ConfirmDialog'
-
-import { useStyles } from './styles'
-import { DATA_GRID_LOCALE_TEXT } from 'constants/dataGridLocale'
+import {
+  PageLayout,
+  PageHeader,
+  DataTable,
+  ConfirmDialog,
+  SearchField,
+  SelectField,
+} from 'shared'
 
 const Clients = () => {
-  const classes = useStyles()
   const { addPopup } = usePopup()
   const addPopupRef = useRef(addPopup)
   addPopupRef.current = addPopup
@@ -37,7 +27,7 @@ const Clients = () => {
   const [openModal, setOpenModal] = useState(false)
   const [selectedClient, setSelectedClient] = useState<IClient | null>(null)
   const [searchInput, setSearchInput, debouncedSearch] = useDebouncedSearch('', 300)
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; clientId: number | null }>({
     open: false,
     clientId: null,
@@ -48,8 +38,7 @@ const Clients = () => {
       setLoading(true)
       const isActive =
         statusFilter === 'active' ? true : statusFilter === 'inactive' ? false : undefined
-      const data = await clientService.getClients(debouncedSearch || undefined, isActive)
-      setClients(data)
+      setClients(await clientService.getClients(debouncedSearch || undefined, isActive))
     } catch (error: any) {
       addPopupRef.current({
         type: 'error',
@@ -69,25 +58,24 @@ const Clients = () => {
     setSelectedClient(null)
     setOpenModal(true)
   }
-
   const handleEdit = (client: IClient) => {
     setSelectedClient(client)
     setOpenModal(true)
   }
-
-  const handleDeleteClick = (id: number) => {
-    setConfirmDelete({ open: true, clientId: id })
+  const handleCloseModal = () => {
+    setOpenModal(false)
+    setSelectedClient(null)
+  }
+  const handleSave = () => {
+    loadClients()
+    handleCloseModal()
   }
 
   const handleDeleteConfirm = async () => {
     if (!confirmDelete.clientId) return
-
     try {
       await clientService.deleteClient(confirmDelete.clientId)
-      addPopup({
-        type: 'success',
-        title: 'Cliente excluído com sucesso',
-      })
+      addPopup({ type: 'success', title: 'Cliente excluído com sucesso' })
       loadClients()
       setConfirmDelete({ open: false, clientId: null })
     } catch (error: any) {
@@ -99,25 +87,11 @@ const Clients = () => {
     }
   }
 
-  const handleDeleteCancel = () => {
-    setConfirmDelete({ open: false, clientId: null })
-  }
-
-  const handleCloseModal = () => {
-    setOpenModal(false)
-    setSelectedClient(null)
-  }
-
-  const handleSave = () => {
-    loadClients()
-    handleCloseModal()
-  }
-
   const columns: GridColDef[] = [
     { field: 'id', headerName: 'ID', width: 90 },
     { field: 'name', headerName: 'Nome', flex: 1, minWidth: 200 },
     { field: 'cpf_cnpj', headerName: 'CPF/CNPJ', width: 150 },
-    { field: 'priority', headerName: 'Prioridade', width: 100 },
+    { field: 'priority', headerName: 'Prioridade', width: 110 },
     { field: 'phone_number', headerName: 'Telefone', width: 150 },
     {
       field: 'is_active',
@@ -133,93 +107,57 @@ const Clients = () => {
       getActions: (params) => [
         <GridActionsCellItem
           key="edit"
-          icon={<span>✏️</span>}
+          icon={<EditIcon />}
           label="Editar"
           onClick={() => handleEdit(params.row)}
         />,
         <GridActionsCellItem
           key="delete"
-          icon={<span>🗑️</span>}
+          icon={<DeleteIcon />}
           label="Excluir"
-          onClick={() => handleDeleteClick(params.row.id)}
+          onClick={() => setConfirmDelete({ open: true, clientId: params.row.id })}
         />,
       ],
     },
   ]
 
   return (
-    <Container maxWidth={false} className={classes.container} sx={{ width: '100%' }}>
-      <Box className={classes.header}>
-        <Box className={classes.headerRow}>
-          <Typography variant="h4" component="h1" className={classes.title}>
-            Clientes
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleCreate}
-          >
+    <PageLayout>
+      <PageHeader
+        title="Clientes"
+        action={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreate}>
             Novo Cliente
           </Button>
-        </Box>
-        <Box className={classes.filtersRow}>
-          <TextField
-            size="small"
-            placeholder="Buscar por ID, nome ou CPF/CNPJ"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ flexGrow: 1, minWidth: 200 }}
-          />
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel id="client-status-label">Status</InputLabel>
-            <Select
-              labelId="client-status-label"
+        }
+        filters={
+          <>
+            <SearchField
+              value={searchInput}
+              onChange={setSearchInput}
+              placeholder="Buscar por ID, nome ou CPF/CNPJ"
+            />
+            <SelectField
               label="Status"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <MenuItem value="">Todos</MenuItem>
-              <MenuItem value="active">Ativo</MenuItem>
-              <MenuItem value="inactive">Inativo</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-      </Box>
-
-      <Paper className={classes.tableContainer}>
-        {loading ? (
-          <Box className={classes.loading}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Box className={classes.gridWrapper} sx={{ width: '100%', minWidth: 0 }}>
-            <DataGrid
-              rows={clients}
-              columns={columns}
-              getRowId={(row) => row.id}
-              pageSizeOptions={[5, 10, 25, 50]}
-              localeText={DATA_GRID_LOCALE_TEXT}
-              initialState={{
-                pagination: {
-                  paginationModel: { pageSize: 10 },
-                },
-              }}
-              disableRowSelectionOnClick
-              autoHeight
-              sx={{
-                '& .MuiDataGrid-cell': { minWidth: 80 },
-              }}
+              onChange={setStatusFilter}
+              options={[
+                { value: '', label: 'Todos' },
+                { value: 'active', label: 'Ativo' },
+                { value: 'inactive', label: 'Inativo' },
+              ]}
             />
-          </Box>
-        )}
-      </Paper>
+          </>
+        }
+      />
+
+      <DataTable<IClient>
+        rows={clients}
+        columns={columns}
+        getRowId={(row) => row.id}
+        loading={loading}
+        emptyTitle="Nenhum cliente encontrado"
+      />
 
       {openModal && (
         <ClientModal
@@ -235,14 +173,13 @@ const Clients = () => {
         title="Confirmar Exclusão"
         message="Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita."
         onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
+        onCancel={() => setConfirmDelete({ open: false, clientId: null })}
         confirmText="Excluir"
         cancelText="Cancelar"
         confirmColor="error"
       />
-    </Container>
+    </PageLayout>
   )
 }
 
 export default Clients
-

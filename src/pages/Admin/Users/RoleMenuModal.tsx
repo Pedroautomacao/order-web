@@ -17,6 +17,8 @@ import {
   CircularProgress,
   Typography,
   Divider,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import { Add as AddIcon, Edit as EditIcon } from '@mui/icons-material'
 import { IRole, IMenuGroup, IPermission, PERMISSION_LABELS_PT } from 'interfaces/IUser'
@@ -29,6 +31,8 @@ interface RoleMenuModalProps {
 }
 
 export default function RoleMenuModal({ open, onClose }: RoleMenuModalProps) {
+  const theme = useTheme()
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'))
   const { addPopup } = usePopup()
   const [roles, setRoles] = useState<IRole[]>([])
   const [menuGroups, setMenuGroups] = useState<IMenuGroup[]>([])
@@ -210,7 +214,7 @@ export default function RoleMenuModal({ open, onClose }: RoleMenuModalProps) {
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={fullScreen}>
         <DialogTitle>Menus por perfil</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 1 }}>

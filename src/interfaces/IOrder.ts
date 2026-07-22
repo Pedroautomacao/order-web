@@ -10,6 +10,9 @@ export interface IOrder {
   client_id: number
   created_by_user_id: number
   assigned_user_id: number | null
+  payment_method: string
+  is_paid: boolean
+  total_amount: number | string
   produced_items: IOrderItem[]
   current_item: IOrderItem | null
   total_items: number
@@ -32,18 +35,34 @@ export interface IOrderItem {
 export interface IOrderCreate {
   clientId: number
   scheduledDate: string
+  paymentMethod: PaymentMethod
   items: IOrderItemCreate[]
 }
 
 export interface IOrderUpdate {
   clientId: number
   scheduledDate: string
+  paymentMethod: PaymentMethod
   items: IOrderItemCreate[]
 }
 
 export interface IOrderItemCreate {
   product_id: number
   quantity: number
+}
+
+export enum PaymentMethod {
+  CASH = 'Cash',
+  CREDIT = 'Credit',
+}
+
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  [PaymentMethod.CASH]: 'À vista',
+  [PaymentMethod.CREDIT]: 'A prazo',
+}
+
+export function getPaymentMethodLabel(method: string): string {
+  return PAYMENT_METHOD_LABELS[method] ?? method
 }
 
 export enum OrderStatus {

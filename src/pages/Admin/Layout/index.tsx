@@ -1,28 +1,23 @@
 import { FC, ReactNode, useState } from 'react'
-import { Box } from '@mui/material'
+import { Box, Toolbar } from '@mui/material'
 
 import { DesktopNavbar } from './DesktopNavbar'
-import { Header } from 'components/Header'
-import { useStyles } from './styles'
+import { Header } from 'shared'
 
 interface LayoutProps {
   children: ReactNode
 }
 
 const Layout: FC<LayoutProps> = ({ children }) => {
-  const classes = useStyles()
   const [mobileOpen, setMobileOpen] = useState(false)
-
-  const handleMenuClick = () => {
-    setMobileOpen(!mobileOpen)
-  }
+  const handleMenuClick = () => setMobileOpen((v) => !v)
 
   return (
-    <Box className={classes.root}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
       <Header onMenuClick={handleMenuClick} />
       <DesktopNavbar mobileOpen={mobileOpen} onMenuClick={handleMenuClick} />
-      <Box component="main" className={classes.content}>
-        <Box className={classes.toolbar} />
+      <Box component="main" sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+        <Toolbar />
         {children}
       </Box>
     </Box>
@@ -30,4 +25,3 @@ const Layout: FC<LayoutProps> = ({ children }) => {
 }
 
 export default Layout
-

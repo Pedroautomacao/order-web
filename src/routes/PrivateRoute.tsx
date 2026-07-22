@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 import { Navigate, useLocation, Outlet } from 'react-router-dom'
 
 import { IState } from 'store'
-import Loading from 'components/Loading'
+import { Loading } from 'shared'
 
 type IPrivateRoute = {
   component?: ComponentType

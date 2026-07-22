@@ -7,6 +7,9 @@ export interface IClient {
   phone_number: string
   observations: string | null
   is_active: boolean
+  allow_cash: boolean
+  allow_credit: boolean
+  credit_limit: number | string
 }
 
 export interface IClientCreate {
@@ -17,6 +20,9 @@ export interface IClientCreate {
   phoneNumber: string
   observations?: string
   isActive?: boolean
+  allowCash: boolean
+  allowCredit: boolean
+  creditLimit: number
 }
 
 export interface IClientUpdate {
@@ -27,5 +33,18 @@ export interface IClientUpdate {
   phoneNumber?: string
   observations?: string
   isActive?: boolean
+  allowCash?: boolean
+  allowCredit?: boolean
+  creditLimit?: number
+}
+
+/** Situação de crédito do cliente (GET /clients/:id/credit) */
+export interface IClientCredit {
+  client_id: number
+  credit_limit: number | string
+  outstanding: number | string
+  available: number | string
+  allow_cash: boolean
+  allow_credit: boolean
 }
 

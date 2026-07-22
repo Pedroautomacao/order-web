@@ -31,6 +31,7 @@ import {
 import orderService from 'services/orderService'
 import { IOrder, IOrderItem, OrderItemStatus } from 'interfaces/IOrder'
 import { usePopup } from 'hooks/usePopup'
+import { ConfirmDialog } from 'shared'
 
 type ProducerState = 'idle' | 'producing' | 'review'
 
@@ -43,6 +44,7 @@ const Producer = () => {
   const [confirmingItem, setConfirmingItem] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [producedQty, setProducedQty] = useState<string>('')
+  const [divergenceOpen, setDivergenceOpen] = useState(false)
 
   // estado de edição de item na revisão
   const [editingItemId, setEditingItemId] = useState<number | null>(null)
@@ -102,16 +104,29 @@ const Producer = () => {
     }
   }
 
-  const handleConfirmItem = async () => {
+  /** Valida a quantidade; se divergir do previsto, abre o modal de confirmação. */
+  const handleConfirmClick = () => {
     if (!order?.current_item) return
     const qty = parseFloat(producedQty)
     if (isNaN(qty) || qty <= 0) {
       addPopup({ type: 'error', title: 'Informe uma quantidade válida' })
       return
     }
+    if (qty !== order.current_item.quantity) {
+      // quantidade a mais OU a menos: pedir confirmação explícita
+      setDivergenceOpen(true)
+      return
+    }
+    doConfirm()
+  }
+
+  const doConfirm = async () => {
+    if (!order?.current_item) return
+    const qty = parseFloat(producedQty)
     setConfirmingItem(true)
     try {
       const updated = await orderService.confirmOrderItem(order.current_item.id, qty)
+      setDivergenceOpen(false)
       setOrder(updated)
       const newState = deriveState(updated)
       setPageState(newState)
@@ -254,24 +269,29 @@ const Producer = () => {
             <strong>{currentItem.product?.name ?? `Produto #${currentItem.product_id}`}</strong>
             &nbsp;— Quantidade prevista: <strong>{currentItem.quantity}</strong>
           </Typography>
-          <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+          <Box
+            display="flex"
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            flexDirection={{ xs: 'column', sm: 'row' }}
+            gap={2}
+          >
             <TextField
               label="Quantidade produzida"
               type="number"
-              size="small"
               value={producedQty}
               onChange={(e) => setProducedQty(e.target.value)}
               inputProps={{ min: 0.01, step: 0.01 }}
-              sx={{ width: 220 }}
+              sx={{ width: { xs: '100%', sm: 240 } }}
               autoFocus
             />
             <Button
               variant="contained"
               color="success"
-              startIcon={confirmingItem ? <CircularProgress size={16} color="inherit" /> : <ConfirmIcon />}
-              onClick={handleConfirmItem}
+              startIcon={confirmingItem ? <CircularProgress size={18} color="inherit" /> : <ConfirmIcon />}
+              onClick={handleConfirmClick}
               disabled={confirmingItem}
               size="large"
+              sx={{ flexGrow: { xs: 0, sm: 1 }, minHeight: 56 }}
             >
               Confirmar item
             </Button>
@@ -306,6 +326,31 @@ const Producer = () => {
             </TableContainer>
           </Paper>
         )}
+
+        {/* Modal de confirmação quando a quantidade produzida diverge do previsto */}
+        <ConfirmDialog
+          open={divergenceOpen}
+          title="Confirmar quantidade diferente"
+          message={(() => {
+            const informed = parseFloat(producedQty) || 0
+            const expected = currentItem.quantity
+            const diff = informed - expected
+            const more = diff > 0
+            return (
+              `${currentItem.product?.name ?? 'Item'}: você informou ` +
+              `${informed} (previsto ${expected}). ` +
+              `São ${Math.abs(diff)} ${more ? 'a MAIS' : 'a MENOS'} que o previsto. ` +
+              `Deseja confirmar mesmo assim?`
+            )
+          })()}
+          onConfirm={doConfirm}
+          onCancel={() => setDivergenceOpen(false)}
+          confirmText={confirmingItem ? 'Confirmando...' : 'Sim, confirmar'}
+          cancelText="Voltar e corrigir"
+          confirmColor={
+            parseFloat(producedQty) > currentItem.quantity ? 'warning' : 'error'
+          }
+        />
       </Container>
     )
   }

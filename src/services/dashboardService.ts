@@ -1,5 +1,10 @@
 import { api as apiService, ApiService } from './api'
 
+export interface IOrdersByDayPoint {
+  date: string
+  count: number
+}
+
 export interface IDashboardOverview {
   orders_today: {
     awaiting: number
@@ -12,6 +17,7 @@ export interface IDashboardOverview {
   completion_rate_today: number
   overdue_orders: number
   produced_not_billed: number
+  orders_by_day: IOrdersByDayPoint[]
 }
 
 class DashboardService {

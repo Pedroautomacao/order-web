@@ -14,6 +14,7 @@ import {
   Switch,
   Box,
   CircularProgress,
+  InputAdornment,
   useTheme,
   useMediaQuery,
 } from '@mui/material'
@@ -37,6 +38,10 @@ interface ProductModalProps {
 const validationSchema = Yup.object({
   name: Yup.string().required('Nome é obrigatório'),
   unitOfMeasureId: Yup.number().required('Unidade de medida é obrigatória').min(1, 'Unidade de medida é obrigatória'),
+  unitPrice: Yup.number()
+    .typeError('Informe um preço')
+    .min(0, 'O preço não pode ser negativo')
+    .required('Informe o preço'),
   isActive: Yup.boolean().optional(),
   description: Yup.string().optional(),
 })
@@ -61,6 +66,7 @@ const ProductModal = ({ open, onClose, onSave, product, units }: ProductModalPro
     defaultValues: {
       name: '',
       unitOfMeasureId: 0,
+      unitPrice: 0,
       isActive: true,
       description: '',
     },
@@ -97,6 +103,7 @@ const ProductModal = ({ open, onClose, onSave, product, units }: ProductModalPro
       return {
         name: productData.name,
         unitOfMeasureId: productData.unit?.id || productData.unit_of_measure_id || 0,
+        unitPrice: Number(productData.unit_price) || 0,
         isActive: productData.is_active,
         description: productData.description || '',
       }
@@ -104,6 +111,7 @@ const ProductModal = ({ open, onClose, onSave, product, units }: ProductModalPro
     return {
       name: '',
       unitOfMeasureId: 0,
+      unitPrice: 0,
       isActive: true,
       description: '',
     }
@@ -114,6 +122,7 @@ const ProductModal = ({ open, onClose, onSave, product, units }: ProductModalPro
     return (
       watchedValues.name !== initialValues.name ||
       watchedValues.unitOfMeasureId !== initialValues.unitOfMeasureId ||
+      Number(watchedValues.unitPrice) !== initialValues.unitPrice ||
       watchedValues.isActive !== initialValues.isActive ||
       watchedValues.description !== initialValues.description
     )
@@ -127,6 +136,7 @@ const ProductModal = ({ open, onClose, onSave, product, units }: ProductModalPro
       reset({
         name: productData.name,
         unitOfMeasureId: unitId,
+        unitPrice: Number(productData.unit_price) || 0,
         isActive: productData.is_active,
         description: productData.description || '',
       })
@@ -134,6 +144,7 @@ const ProductModal = ({ open, onClose, onSave, product, units }: ProductModalPro
       reset({
         name: '',
         unitOfMeasureId: 0,
+        unitPrice: 0,
         isActive: true,
         description: '',
       })
@@ -226,6 +237,25 @@ const ProductModal = ({ open, onClose, onSave, product, units }: ProductModalPro
                     </Box>
                   )}
                 </FormControl>
+              )}
+            />
+
+            <Controller
+              name="unitPrice"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Preço unitário"
+                  type="number"
+                  fullWidth
+                  inputProps={{ min: 0, step: 0.01 }}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                  }}
+                  error={!!errors.unitPrice}
+                  helperText={errors.unitPrice?.message}
+                />
               )}
             />
 

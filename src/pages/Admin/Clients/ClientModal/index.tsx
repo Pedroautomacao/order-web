@@ -13,6 +13,10 @@ import {
   Box,
   FormControlLabel,
   Switch,
+  Checkbox,
+  FormGroup,
+  Typography,
+  InputAdornment,
   useTheme,
   useMediaQuery,
 } from '@mui/material'
@@ -48,7 +52,15 @@ const validationSchema = Yup.object({
   phoneNumber: Yup.string().required('Telefone é obrigatório'),
   observations: Yup.string().optional(),
   isActive: Yup.boolean().optional(),
-})
+  allowCash: Yup.boolean(),
+  allowCredit: Yup.boolean(),
+  creditLimit: Yup.number()
+    .typeError('Informe um valor')
+    .min(0, 'O limite não pode ser negativo')
+    .required('Informe o limite'),
+}).test('at-least-one-payment', 'Selecione ao menos uma forma de pagamento', (v) =>
+  Boolean(v.allowCash || v.allowCredit),
+)
 
 const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
   const theme = useTheme()
@@ -73,45 +85,30 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
       phoneNumber: '',
       observations: '',
       isActive: true,
+      allowCash: true,
+      allowCredit: true,
+      creditLimit: 0,
     },
   })
 
   const watchedValues = watch()
-  const initialValues = useMemo(() => {
-    if (client) {
-      return {
-        name: client.name,
-        cpfCnpj: client.cpf_cnpj,
-        priority: client.priority,
-        address: client.address,
-        phoneNumber: client.phone_number,
-        observations: client.observations || '',
-        isActive: client.is_active,
-      }
-    }
-    return {
-      name: '',
-      cpfCnpj: '',
-      priority: 'B',
-      address: '',
-      phoneNumber: '',
-      observations: '',
-      isActive: true,
-    }
-  }, [client])
+  const allowCredit = watch('allowCredit')
 
   const hasChanges = useMemo(() => {
     if (!client) return false
     return (
-      watchedValues.name !== initialValues.name ||
-      watchedValues.cpfCnpj !== initialValues.cpfCnpj ||
-      watchedValues.priority !== initialValues.priority ||
-      watchedValues.address !== initialValues.address ||
-      watchedValues.phoneNumber !== initialValues.phoneNumber ||
-      watchedValues.observations !== initialValues.observations ||
-      watchedValues.isActive !== initialValues.isActive
+      watchedValues.name !== client.name ||
+      removeMask(watchedValues.cpfCnpj || '') !== client.cpf_cnpj ||
+      watchedValues.priority !== client.priority ||
+      watchedValues.address !== client.address ||
+      watchedValues.phoneNumber !== client.phone_number ||
+      (watchedValues.observations || '') !== (client.observations || '') ||
+      watchedValues.isActive !== client.is_active ||
+      watchedValues.allowCash !== client.allow_cash ||
+      watchedValues.allowCredit !== client.allow_credit ||
+      Number(watchedValues.creditLimit) !== Number(client.credit_limit)
     )
-  }, [watchedValues, initialValues, client])
+  }, [watchedValues, client])
 
   const canSubmit = client ? hasChanges && isValid : isValid
 
@@ -126,6 +123,9 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
         phoneNumber: client.phone_number,
         observations: client.observations || '',
         isActive: client.is_active,
+        allowCash: client.allow_cash,
+        allowCredit: client.allow_credit,
+        creditLimit: Number(client.credit_limit) || 0,
       })
     } else {
       reset({
@@ -136,6 +136,9 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
         phoneNumber: '',
         observations: '',
         isActive: true,
+        allowCash: true,
+        allowCredit: true,
+        creditLimit: 0,
       })
     }
   }, [client, reset, open])
@@ -147,6 +150,7 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
         ...data,
         cpfCnpj: removeMask(data.cpfCnpj),
         isActive: data.isActive ?? true,
+        creditLimit: Number(data.creditLimit) || 0,
       }
       if (client) {
         await clientService.updateClient(client.id, dataToSend as IClientUpdate)
@@ -274,6 +278,74 @@ const ClientModal = ({ open, onClose, onSave, client }: ClientModalProps) => {
                   rows={3}
                   error={!!errors.observations}
                   helperText={errors.observations?.message}
+                />
+              )}
+            />
+
+            {/* Meios de pagamento aceitos */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                Formas de pagamento aceitas
+              </Typography>
+              <FormGroup row>
+                <Controller
+                  name="allowCash"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={field.value ?? false}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                        />
+                      }
+                      label="À vista"
+                    />
+                  )}
+                />
+                <Controller
+                  name="allowCredit"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={field.value ?? false}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                        />
+                      }
+                      label="A prazo"
+                    />
+                  )}
+                />
+              </FormGroup>
+              {(errors as any)?.[''] && (
+                <Typography variant="caption" color="error">
+                  Selecione ao menos uma forma de pagamento
+                </Typography>
+              )}
+            </Box>
+
+            {/* Limite de crédito (relevante quando aceita a prazo) */}
+            <Controller
+              name="creditLimit"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Limite de crédito (a prazo)"
+                  type="number"
+                  fullWidth
+                  disabled={!allowCredit}
+                  inputProps={{ min: 0, step: 0.01 }}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                  }}
+                  error={!!errors.creditLimit}
+                  helperText={
+                    errors.creditLimit?.message ||
+                    'Soma máxima de pedidos a prazo em aberto (não pagos).'
+                  }
                 />
               )}
             />
