@@ -71,6 +71,17 @@ class UserService {
       new_password: newPassword,
     });
   };
+
+  /** Usuário logado troca a própria senha (exige a senha atual). */
+  public changeOwnPassword = async (
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> => {
+    return this.api.put("/users/me/change-password", {
+      currentPassword,
+      newPassword,
+    });
+  };
 }
 
 const userService = new UserService(apiService);

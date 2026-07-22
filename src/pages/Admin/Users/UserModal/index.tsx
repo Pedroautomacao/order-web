@@ -20,6 +20,8 @@ import { useForm, Controller } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as Yup from 'yup'
 
+import { passwordSchema, PASSWORD_HELP } from 'shared/validation/password'
+
 import userService from 'services/userService'
 import { IUser, IUserCreate, IUserUpdate, IRole, ROLE_DISPLAY_NAMES } from 'interfaces/IUser'
 import { usePopup } from 'hooks/usePopup'
@@ -44,9 +46,7 @@ const createSchema = Yup.object({
     }),
   email: Yup.string().email('E-mail inválido').nullable(),
   is_active: Yup.boolean().required(),
-  password: Yup.string()
-    .min(8, 'Senha deve ter no mínimo 8 caracteres')
-    .required('Senha é obrigatória'),
+  password: passwordSchema().required('Senha é obrigatória'),
 })
 
 const updateSchema = Yup.object({
@@ -54,8 +54,7 @@ const updateSchema = Yup.object({
   last_name: Yup.string().required('Sobrenome é obrigatório'),
   email: Yup.string().email('E-mail inválido').nullable(),
   is_active: Yup.boolean().required(),
-  password: Yup.string()
-    .min(8, 'Senha deve ter no mínimo 8 caracteres')
+  password: passwordSchema()
     .nullable()
     .transform((v) => (v === '' ? undefined : v)),
 })
@@ -231,7 +230,7 @@ const UserModal = ({ open, onClose, onSave, user }: UserModalProps) => {
                       label="Senha"
                       fullWidth
                       error={!!createForm.formState.errors.password}
-                      helperText={(createForm.formState.errors.password as any)?.message}
+                      helperText={(createForm.formState.errors.password as any)?.message || PASSWORD_HELP}
                     />
                   )}
                 />
@@ -250,7 +249,10 @@ const UserModal = ({ open, onClose, onSave, user }: UserModalProps) => {
                     placeholder="Deixe em branco para manter a atual"
                     fullWidth
                     error={!!updateForm.formState.errors.password}
-                    helperText={(updateForm.formState.errors.password as any)?.message}
+                    helperText={
+                      (updateForm.formState.errors.password as any)?.message ||
+                      `Deixe em branco para manter. ${PASSWORD_HELP}`
+                    }
                   />
                 )}
               />

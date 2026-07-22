@@ -1,10 +1,11 @@
-import { AppBar, Toolbar, Box, IconButton, Avatar, Menu, MenuItem } from '@mui/material'
-import { AccountCircle, Logout, Menu as MenuIcon } from '@mui/icons-material'
+import { AppBar, Toolbar, Box, IconButton, Avatar, Menu, MenuItem, Divider } from '@mui/material'
+import { AccountCircle, Logout, Menu as MenuIcon, LockReset } from '@mui/icons-material'
 import { useState } from 'react'
 
 import { useAuth } from 'hooks/useAuth'
 import { theme } from 'theme'
 import BrandLogo from 'shared/BrandLogo'
+import ChangePasswordModal from 'shared/ChangePasswordModal'
 
 interface HeaderProps {
   onMenuClick?: () => void
@@ -17,12 +18,17 @@ interface HeaderProps {
 export const Header = ({ onMenuClick }: HeaderProps) => {
   const { signOut } = useAuth()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [pwdOpen, setPwdOpen] = useState(false)
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget)
   const handleClose = () => setAnchorEl(null)
   const handleLogout = () => {
     handleClose()
     signOut()
+  }
+  const handleChangePassword = () => {
+    handleClose()
+    setPwdOpen(true)
   }
 
   return (
@@ -64,6 +70,11 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             open={Boolean(anchorEl)}
             onClose={handleClose}
           >
+            <MenuItem onClick={handleChangePassword}>
+              <LockReset sx={{ mr: 1 }} />
+              Trocar senha
+            </MenuItem>
+            <Divider />
             <MenuItem onClick={handleLogout}>
               <Logout sx={{ mr: 1 }} />
               Sair
@@ -71,6 +82,8 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           </Menu>
         </Box>
       </Toolbar>
+
+      <ChangePasswordModal open={pwdOpen} onClose={() => setPwdOpen(false)} />
     </AppBar>
   )
 }
