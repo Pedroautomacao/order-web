@@ -81,6 +81,15 @@ export function DataTable<T extends object>({
             border: 'none',
             '& .MuiDataGrid-columnHeaders': { borderRadius: 2 },
             '& .MuiDataGrid-cell': { minWidth: 80 },
+            // ações sempre alinhadas ao início — o "olho" fica na mesma posição
+            // mesmo quando a linha não tem o menu de 3 pontos
+            '& .MuiDataGrid-cell--withRenderer.MuiDataGrid-cell[data-field="actions"]': {
+              justifyContent: 'flex-start',
+            },
+            '& .MuiDataGrid-actionsCell': {
+              gridGap: 0,
+              justifyContent: 'flex-start',
+            },
           }}
         />
       </Box>

@@ -5,6 +5,9 @@ import {
   Visibility as ViewIcon,
   Add as AddIcon,
   Paid as PaidIcon,
+  Cancel as CancelIcon,
+  Event as RescheduleIcon,
+  PriorityHigh as PriorityIcon,
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 
@@ -21,8 +24,9 @@ import {
   OrderListCard,
   OrderFormModal,
   ConfirmDialog,
-  SearchField,
+  FormModal,
   DateField,
+  SearchField,
   SelectField,
   formatCurrency,
 } from 'shared'
@@ -43,6 +47,13 @@ const Orders = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [payTarget, setPayTarget] = useState<IOrder | null>(null)
   const [paying, setPaying] = useState(false)
+  const [cancelTarget, setCancelTarget] = useState<IOrder | null>(null)
+  const [canceling, setCanceling] = useState(false)
+  const [prioTarget, setPrioTarget] = useState<IOrder | null>(null)
+  const [prioritizing, setPrioritizing] = useState(false)
+  const [rescheduleTarget, setRescheduleTarget] = useState<IOrder | null>(null)
+  const [newDate, setNewDate] = useState('')
+  const [rescheduling, setRescheduling] = useState(false)
 
   const loadOrders = useCallback(async () => {
     try {
@@ -92,6 +103,70 @@ const Orders = () => {
     !o.is_paid &&
     o.status !== OrderStatus.CANCELED
 
+  // Cancelar: Aguardando, Em produção ou Produzido (não Faturado/Cancelado)
+  const canCancel = (o: IOrder) =>
+    [OrderStatus.AWAITING, OrderStatus.PRODUCING, OrderStatus.PRODUCED].includes(o.status)
+  // Remarcar data: só Aguardando
+  const canReschedule = (o: IOrder) => o.status === OrderStatus.AWAITING
+  // Priorizar: se ainda não é "A" e não está cancelado/faturado
+  const canPrioritize = (o: IOrder) =>
+    o.priority !== 'A' &&
+    ![OrderStatus.CANCELED, OrderStatus.BILLED].includes(o.status)
+
+  const runAction = async (
+    fn: () => Promise<unknown>,
+    successTitle: string,
+    onDone: () => void,
+    setBusy: (v: boolean) => void,
+  ) => {
+    setBusy(true)
+    try {
+      await fn()
+      addPopup({ type: 'success', title: successTitle })
+      onDone()
+      loadOrders()
+    } catch (error: any) {
+      addPopup({
+        type: 'error',
+        title: 'Não foi possível concluir a ação',
+        message: error?.detail || error?.message || 'Tente novamente.',
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleCancel = () =>
+    cancelTarget &&
+    runAction(
+      () => orderService.cancelOrder(cancelTarget.id),
+      'Pedido cancelado',
+      () => setCancelTarget(null),
+      setCanceling,
+    )
+
+  const handlePrioritize = () =>
+    prioTarget &&
+    runAction(
+      () => orderService.prioritizeOrder(prioTarget.id),
+      'Pedido priorizado (A)',
+      () => setPrioTarget(null),
+      setPrioritizing,
+    )
+
+  const openReschedule = (o: IOrder) => {
+    setNewDate(o.scheduled_date)
+    setRescheduleTarget(o)
+  }
+  const handleReschedule = () =>
+    rescheduleTarget &&
+    runAction(
+      () => orderService.rescheduleOrder(rescheduleTarget.id, newDate),
+      'Data remarcada',
+      () => setRescheduleTarget(null),
+      setRescheduling,
+    )
+
   const columns: GridColDef[] = [
     { field: 'id', headerName: 'ID', width: 70 },
     {
@@ -135,27 +210,39 @@ const Orders = () => {
       field: 'actions',
       type: 'actions',
       headerName: 'Ações',
-      width: 90,
+      width: 100,
       getActions: (params) => {
+        const o = params.row as IOrder
+        // "Ver" sempre presente e sempre na mesma posição (não vai para o menu)
         const actions = [
           <GridActionsCellItem
             key="view"
             icon={<ViewIcon />}
             label="Ver detalhes"
-            onClick={() => navigate(`/admin/orders/${params.row.id}`)}
+            onClick={() => navigate(`/admin/orders/${o.id}`)}
           />,
         ]
-        if (canMarkPaid(params.row)) {
+        // Demais ações admin sempre no menu de 3 pontos
+        if (canMarkPaid(o))
           actions.push(
-            <GridActionsCellItem
-              key="pay"
-              icon={<PaidIcon />}
-              label="Marcar como pago"
-              onClick={() => setPayTarget(params.row)}
-              showInMenu
-            />,
+            <GridActionsCellItem key="pay" icon={<PaidIcon />} label="Marcar como pago"
+              onClick={() => setPayTarget(o)} showInMenu />,
           )
-        }
+        if (canPrioritize(o))
+          actions.push(
+            <GridActionsCellItem key="prio" icon={<PriorityIcon />} label="Priorizar (A)"
+              onClick={() => setPrioTarget(o)} showInMenu />,
+          )
+        if (canReschedule(o))
+          actions.push(
+            <GridActionsCellItem key="resch" icon={<RescheduleIcon />} label="Remarcar data"
+              onClick={() => openReschedule(o)} showInMenu />,
+          )
+        if (canCancel(o))
+          actions.push(
+            <GridActionsCellItem key="cancel" icon={<CancelIcon />} label="Cancelar pedido"
+              onClick={() => setCancelTarget(o)} showInMenu />,
+          )
         return actions
       },
     },
@@ -229,6 +316,53 @@ const Orders = () => {
         cancelText="Cancelar"
         confirmColor="success"
       />
+
+      <ConfirmDialog
+        open={!!cancelTarget}
+        title="Cancelar pedido"
+        message={
+          cancelTarget
+            ? `Tem certeza que deseja cancelar o pedido #${cancelTarget.id} de ${cancelTarget.client?.name ?? ''}? Esta ação não pode ser desfeita.`
+            : ''
+        }
+        onConfirm={handleCancel}
+        onCancel={() => setCancelTarget(null)}
+        confirmText={canceling ? 'Cancelando...' : 'Confirmar cancelamento'}
+        cancelText="Voltar"
+        confirmColor="error"
+      />
+
+      <ConfirmDialog
+        open={!!prioTarget}
+        title="Priorizar pedido"
+        message={
+          prioTarget
+            ? `Priorizar o pedido #${prioTarget.id}? Ele passa para a prioridade máxima (A) na fila de produção.`
+            : ''
+        }
+        onConfirm={handlePrioritize}
+        onCancel={() => setPrioTarget(null)}
+        confirmText={prioritizing ? 'Priorizando...' : 'Priorizar'}
+        cancelText="Voltar"
+        confirmColor="warning"
+      />
+
+      <FormModal
+        open={!!rescheduleTarget}
+        title={rescheduleTarget ? `Remarcar entrega — Pedido #${rescheduleTarget.id}` : 'Remarcar'}
+        onClose={() => setRescheduleTarget(null)}
+        onSubmit={handleReschedule}
+        submitLabel={rescheduling ? 'Salvando...' : 'Remarcar'}
+        submitting={rescheduling}
+        maxWidth="xs"
+      >
+        <DateField
+          label="Nova data de entrega"
+          value={newDate}
+          onChange={setNewDate}
+          fullWidth
+        />
+      </FormModal>
     </PageLayout>
   )
 }

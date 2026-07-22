@@ -25,7 +25,7 @@ import { IProduct } from 'interfaces/IProduct'
 import { usePopup } from 'hooks/usePopup'
 import { getMinOrderDate } from 'utils/orderDateUtils'
 import FormModal from 'shared/FormModal'
-import { formatCurrency } from 'shared/format'
+import { formatCurrency, productLabel } from 'shared/format'
 
 interface OrderFormValues {
   client: IClient | null
@@ -69,7 +69,7 @@ const ProductRow = ({ index, control, products, errors, fields, remove }: any) =
           <Autocomplete
             options={availableProducts}
             getOptionLabel={(o: IProduct) =>
-              `${o.sku ? o.sku + ' — ' : ''}${o.name} (${formatCurrency(o.unit_price)})`
+              `${productLabel(o, { withSku: true })} — ${formatCurrency(o.unit_price)}`
             }
             value={f.value}
             onChange={(_, v) => f.onChange(v)}

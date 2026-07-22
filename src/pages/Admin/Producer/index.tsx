@@ -31,7 +31,7 @@ import {
 import orderService from 'services/orderService'
 import { IOrder, IOrderItem, OrderItemStatus } from 'interfaces/IOrder'
 import { usePopup } from 'hooks/usePopup'
-import { ConfirmDialog } from 'shared'
+import { ConfirmDialog, productLabel, formatQuantityWithUnit } from 'shared'
 
 type ProducerState = 'idle' | 'producing' | 'review'
 
@@ -266,8 +266,9 @@ const Producer = () => {
             Item atual — {producedItems.length + 1} de {totalItems}
           </Typography>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>{currentItem.product?.name ?? `Produto #${currentItem.product_id}`}</strong>
-            &nbsp;— Quantidade prevista: <strong>{currentItem.quantity}</strong>
+            <strong>{productLabel(currentItem.product, { fallback: `Produto #${currentItem.product_id}` })}</strong>
+            &nbsp;— Quantidade prevista:{' '}
+            <strong>{formatQuantityWithUnit(currentItem.quantity, currentItem.product?.unit?.code)}</strong>
           </Typography>
           <Box
             display="flex"
@@ -316,9 +317,9 @@ const Producer = () => {
                 <TableBody>
                   {producedItems.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell>{item.product?.name ?? `#${item.product_id}`}</TableCell>
-                      <TableCell align="right">{item.quantity}</TableCell>
-                      <TableCell align="right">{item.produced_quantity ?? '-'}</TableCell>
+                      <TableCell>{productLabel(item.product, { fallback: `#${item.product_id}` })}</TableCell>
+                      <TableCell align="right">{formatQuantityWithUnit(item.quantity, item.product?.unit?.code)}</TableCell>
+                      <TableCell align="right">{formatQuantityWithUnit(item.produced_quantity, item.product?.unit?.code)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -336,10 +337,11 @@ const Producer = () => {
             const expected = currentItem.quantity
             const diff = informed - expected
             const more = diff > 0
+            const unit = currentItem.product?.unit?.code
             return (
-              `${currentItem.product?.name ?? 'Item'}: você informou ` +
-              `${informed} (previsto ${expected}). ` +
-              `São ${Math.abs(diff)} ${more ? 'a MAIS' : 'a MENOS'} que o previsto. ` +
+              `${productLabel(currentItem.product, { fallback: 'Item' })}: você informou ` +
+              `${formatQuantityWithUnit(informed, unit)} (previsto ${formatQuantityWithUnit(expected, unit)}). ` +
+              `São ${formatQuantityWithUnit(Math.abs(diff), unit)} ${more ? 'a MAIS' : 'a MENOS'} que o previsto. ` +
               `Deseja confirmar mesmo assim?`
             )
           })()}
@@ -393,8 +395,8 @@ const Producer = () => {
               <TableBody>
                 {producedItems.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell>{item.product?.name ?? `#${item.product_id}`}</TableCell>
-                    <TableCell align="right">{item.quantity}</TableCell>
+                    <TableCell>{productLabel(item.product, { fallback: `#${item.product_id}` })}</TableCell>
+                    <TableCell align="right">{formatQuantityWithUnit(item.quantity, item.product?.unit?.code)}</TableCell>
                     <TableCell align="right">
                       {editingItemId === item.id ? (
                         <TextField

@@ -14,7 +14,7 @@ import { ArrowBack as BackIcon } from '@mui/icons-material'
 import { ReactNode } from 'react'
 
 import { IOrder, getOrderItemStatusLabel } from 'interfaces/IOrder'
-import { PageLayout, StatusChip, PaymentChip, formatCurrency } from 'shared'
+import { PageLayout, StatusChip, PaymentChip, formatCurrency, productLabel } from 'shared'
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '-'
@@ -121,7 +121,7 @@ export const OrderDetailView = ({ order, onBack, actions, extraFields }: OrderDe
               ) : (
                 allItems.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell>{item.product?.name ?? '-'}</TableCell>
+                    <TableCell>{productLabel(item.product)}</TableCell>
                     <TableCell align="right">
                       {formatQuantity(item.quantity, item.product?.unit?.code)}
                     </TableCell>

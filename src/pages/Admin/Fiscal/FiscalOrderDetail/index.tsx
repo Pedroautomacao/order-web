@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Button, Chip } from '@mui/material'
+import { Button } from '@mui/material'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Receipt as ReceiptIcon } from '@mui/icons-material'
+import { Receipt as ReceiptIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material'
 
 import orderService from 'services/orderService'
 import billingService from 'services/billingService'
@@ -66,15 +66,27 @@ const FiscalOrderDetail = () => {
       onBack={() => navigate('/admin/fiscal')}
       actions={
         isBilled ? (
-          <Chip icon={<ReceiptIcon />} label="Nota emitida" color="success" />
+          <Button
+            variant="outlined"
+            color="success"
+            startIcon={<CheckCircleIcon />}
+            disabled
+            sx={{
+              // mantém verde legível mesmo desabilitado (indica "já concluído")
+              '&.Mui-disabled': { color: 'success.main', borderColor: 'success.main' },
+            }}
+          >
+            Emitida
+          </Button>
         ) : (
           <Button
             variant="contained"
+            color="primary"
             startIcon={<ReceiptIcon />}
             onClick={handleNotaEmitida}
             disabled={billLoading}
           >
-            {billLoading ? 'Salvando...' : 'Nota emitida'}
+            {billLoading ? 'Salvando...' : 'Marcar nota emitida'}
           </Button>
         )
       }

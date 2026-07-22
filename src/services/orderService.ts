@@ -40,6 +40,21 @@ class OrderService {
     return this.api.patch(`/orders/${id}/pay`, {})
   }
 
+  /** Cancela um pedido (admin — order:cancel). */
+  public cancelOrder = async (id: number): Promise<IOrder> => {
+    return this.api.patch(`/orders/${id}/cancel`, {})
+  }
+
+  /** Prioriza um pedido: prioridade vira "A" (order:set_priority). */
+  public prioritizeOrder = async (id: number): Promise<IOrder> => {
+    return this.api.patch(`/orders/${id}/prioritize`, {})
+  }
+
+  /** Remarca a data de entrega (só Aguardando). */
+  public rescheduleOrder = async (id: number, scheduledDate: string): Promise<IOrder> => {
+    return this.api.patch(`/orders/${id}/reschedule`, { scheduledDate })
+  }
+
   /** Lista pedidos criados pelo vendedor logado. */
   public getSellerOrders = async (search?: string, status?: string, scheduledDate?: string): Promise<IOrder[]> => {
     const params: Record<string, string> = {}

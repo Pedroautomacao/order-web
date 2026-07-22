@@ -18,7 +18,7 @@ import { IOrder, IOrderUpdate, OrderStatus, PaymentMethod } from 'interfaces/IOr
 import { IClient } from 'interfaces/IClient'
 import { IProduct } from 'interfaces/IProduct'
 import { usePopup } from 'hooks/usePopup'
-import { LoadingState, OrderDetailView, FormModal, ConfirmDialog } from 'shared'
+import { LoadingState, OrderDetailView, FormModal, ConfirmDialog, productLabel } from 'shared'
 
 interface OrderFormValues {
   client: IClient | null
@@ -244,7 +244,7 @@ const SellerOrderDetail = () => {
               render={({ field: f }) => (
                 <Autocomplete
                   options={products}
-                  getOptionLabel={(o) => o.name}
+                  getOptionLabel={(o) => productLabel(o, { withSku: true })}
                   isOptionEqualToValue={(o, v) => o.id === v.id}
                   value={f.value}
                   onChange={(_, v) => f.onChange(v)}

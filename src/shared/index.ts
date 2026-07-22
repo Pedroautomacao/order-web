@@ -23,7 +23,7 @@ export { default as OrderFormModal } from 'shared/OrderFormModal'
 export { default as OrderDetailView } from 'shared/OrderDetailView'
 
 export { LoadingState, EmptyState } from 'shared/states'
-export { formatCurrency } from 'shared/format'
+export { formatCurrency, productLabel, formatQuantityWithUnit } from 'shared/format'
 export { SearchField, DateField, SelectField } from 'shared/fields'
 
 export { Header } from 'shared/Header'
