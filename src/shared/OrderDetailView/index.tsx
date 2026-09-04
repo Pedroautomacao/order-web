@@ -49,10 +49,13 @@ interface OrderDetailViewProps {
  * cabeçalho com voltar + status, cartão de informações e tabela de itens.
  */
 export const OrderDetailView = ({ order, onBack, actions, extraFields }: OrderDetailViewProps) => {
-  const allItems = [
-    ...(order.produced_items || []),
-    ...(order.current_item ? [order.current_item] : []),
-  ]
+  // produced_items + current_item é o recorte do produtor: deixa de fora todo
+  // item ainda em Aguardando. O fallback cobre uma API anterior ao campo items.
+  const allItems =
+    order.items ?? [
+      ...(order.produced_items || []),
+      ...(order.current_item ? [order.current_item] : []),
+    ]
 
   return (
     <PageLayout maxWidth={1000}>

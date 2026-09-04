@@ -1,4 +1,4 @@
-import { Snackbar, Alert as MuiAlert, AlertColor } from '@mui/material'
+import { Snackbar, Alert as MuiAlert, AlertColor, AlertTitle } from '@mui/material'
 
 import { IAlert } from 'interfaces/IAlert'
 import { usePopup } from 'hooks/usePopup'
@@ -24,9 +24,16 @@ const Alert = () => {
             onClose={() => handleClose(index)}
             severity={popup.type as AlertColor}
             variant="filled"
-            sx={{ width: '100%' }}
+            sx={{ width: '100%', maxWidth: 420 }}
           >
-            {popup.title}
+            {popup.message ? (
+              <>
+                <AlertTitle sx={{ mb: 0.25 }}>{popup.title}</AlertTitle>
+                {popup.message}
+              </>
+            ) : (
+              popup.title
+            )}
           </MuiAlert>
         </Snackbar>
       ))}

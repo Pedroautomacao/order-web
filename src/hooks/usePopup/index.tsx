@@ -1,4 +1,4 @@
-import { FC, useContext, createContext, useState } from 'react'
+import { FC, useCallback, useContext, createContext, useMemo, useState } from 'react'
 
 import { IAlert } from 'interfaces/IAlert'
 
@@ -13,24 +13,30 @@ const PopupContext = createContext<IPopupContext>({} as IPopupContext)
 export const PopupProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
   const [popups, setPopups] = useState<IAlert[]>([])
 
-  const addPopup = (alert: IAlert) => {
+  // useCallback/useMemo nao sao cosmeticos aqui: sem eles addPopup muda de
+  // identidade a cada render do provider, e todo consumidor com
+  // useCallback([addPopup]) + useEffect refaz o fetch a cada popup exibido ou
+  // auto-fechado — na tela do produtor isso apagava a quantidade digitada.
+  const addPopup = useCallback((alert: IAlert) => {
     const newPopup = { ...alert }
     setPopups(prev => [...prev, newPopup])
 
     setTimeout(() => {
-      setPopups(prev => prev.filter((_, index) => index !== prev.length - 1))
+      // remove este popup, nao "o ultimo": com dois abertos o timer derrubava o errado
+      setPopups(prev => prev.filter(p => p !== newPopup))
     }, 5000)
-  }
+  }, [])
 
-  const removePopup = (index: number) => {
+  const removePopup = useCallback((index: number) => {
     setPopups(prev => prev.filter((_, i) => i !== index))
-  }
+  }, [])
 
-  return (
-    <PopupContext.Provider value={{ addPopup, popups, removePopup }}>
-      {children}
-    </PopupContext.Provider>
+  const value = useMemo(
+    () => ({ addPopup, popups, removePopup }),
+    [addPopup, popups, removePopup],
   )
+
+  return <PopupContext.Provider value={value}>{children}</PopupContext.Provider>
 }
 
 export const usePopup = () => {

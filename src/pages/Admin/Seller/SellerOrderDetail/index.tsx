@@ -99,15 +99,19 @@ const SellerOrderDetail = () => {
       ])
       setClients(clientsData)
       setProducts(productsData)
-      const allItems = [
-        ...(order.produced_items || []),
-        ...(order.current_item ? [order.current_item] : []),
-      ]
+      // Casar com a opção carregada do Autocomplete: o pedido traz só
+      // {id, name}, e um objeto parcial deixa o rótulo quebrado (sem SKU/CNPJ)
+      // e não bate no isOptionEqualToValue.
+      const clientId = order.client?.id ?? order.client_id
       reset({
-        client: order.client ? ({ id: order.client_id, name: order.client.name } as IClient) : null,
+        client:
+          clientsData.find((c) => c.id === clientId) ??
+          (order.client ? ({ id: clientId, name: order.client.name } as IClient) : null),
         scheduledDate: order.scheduled_date,
-        items: allItems.map((i) => ({
-          product: i.product ? ({ id: i.product_id, name: i.product.name } as IProduct) : null,
+        items: (order.items ?? []).map((i) => ({
+          product:
+            productsData.find((p) => p.id === i.product_id) ??
+            (i.product ? ({ ...i.product, id: i.product_id } as IProduct) : null),
           quantity: i.quantity,
         })),
       })

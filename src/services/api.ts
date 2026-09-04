@@ -11,6 +11,8 @@ interface IApi {
 interface ErrorResponse {
   detail?: string | Array<{ loc: string[]; msg: string; type: string }>
   message?: string
+  /** Status HTTP da resposta. Sem ele a tela nao distingue 404 de 500. */
+  status?: number
 }
 
 /**
@@ -103,7 +105,8 @@ export class ApiService {
       .then(x => x.data)
       .catch(err => {
         if (err?.message === 'Network Error') throw new Error('Network Error')
-        if (axios.isAxiosError(err)) throw normalizeApiError(err.response?.data)
+        if (axios.isAxiosError(err))
+          throw { ...normalizeApiError(err.response?.data), status: err.response?.status }
 
         throw err
       })
@@ -115,7 +118,8 @@ export class ApiService {
       .then(x => x.data)
       .catch(err => {
         if (err?.message === 'Network Error') throw new Error('Network Error')
-        if (axios.isAxiosError(err)) throw normalizeApiError(err.response?.data)
+        if (axios.isAxiosError(err))
+          throw { ...normalizeApiError(err.response?.data), status: err.response?.status }
         throw err
       })
   }
@@ -126,7 +130,8 @@ export class ApiService {
       .then(x => x.data)
       .catch(err => {
         if (err?.message === 'Network Error') throw new Error('Network Error')
-        if (axios.isAxiosError(err)) throw normalizeApiError(err.response?.data)
+        if (axios.isAxiosError(err))
+          throw { ...normalizeApiError(err.response?.data), status: err.response?.status }
         throw err
       })
   }
@@ -137,7 +142,8 @@ export class ApiService {
       .then(x => x.data)
       .catch(err => {
         if (err?.message === 'Network Error') throw new Error('Network Error')
-        if (axios.isAxiosError(err)) throw normalizeApiError(err.response?.data)
+        if (axios.isAxiosError(err))
+          throw { ...normalizeApiError(err.response?.data), status: err.response?.status }
         throw err
       })
   }
@@ -148,7 +154,8 @@ export class ApiService {
       .then(x => x.data)
       .catch(err => {
         if (err?.message === 'Network Error') throw new Error('Network Error')
-        if (axios.isAxiosError(err)) throw normalizeApiError(err.response?.data)
+        if (axios.isAxiosError(err))
+          throw { ...normalizeApiError(err.response?.data), status: err.response?.status }
         throw err
       })
   }

@@ -13,6 +13,10 @@ export interface IOrder {
   payment_method: string
   is_paid: boolean
   total_amount: number | string
+  /** Todos os itens do pedido, em qualquer status. Só vem nas respostas de
+   *  detalhe (GET /orders/:id e afins), não nas de listagem. */
+  items?: IOrderItem[]
+  /** Recorte da tela do produtor: só itens já produzidos. */
   produced_items: IOrderItem[]
   current_item: IOrderItem | null
   total_items: number

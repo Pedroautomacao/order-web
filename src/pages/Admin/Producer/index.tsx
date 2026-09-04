@@ -17,6 +17,7 @@ import {
   Alert,
   Divider,
   IconButton,
+  InputAdornment,
   Tooltip,
 } from '@mui/material'
 import {
@@ -29,11 +30,16 @@ import {
 } from '@mui/icons-material'
 
 import orderService from 'services/orderService'
-import { IOrder, IOrderItem, OrderItemStatus } from 'interfaces/IOrder'
+import { IOrder, IOrderItem, OrderStatus } from 'interfaces/IOrder'
 import { usePopup } from 'hooks/usePopup'
 import { ConfirmDialog, productLabel, formatQuantityWithUnit } from 'shared'
 
 type ProducerState = 'idle' | 'producing' | 'review'
+
+/** Aceita virgula como separador decimal: o teclado do chao de fabrica usa virgula
+ *  e a tela exibe todos os numeros com virgula. */
+const parseQuantity = (value: string): number =>
+  parseFloat(String(value ?? '').replace(',', '.'))
 
 const Producer = () => {
   const { addPopup } = usePopup()
@@ -45,6 +51,7 @@ const Producer = () => {
   const [finishing, setFinishing] = useState(false)
   const [producedQty, setProducedQty] = useState<string>('')
   const [divergenceOpen, setDivergenceOpen] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   // estado de edição de item na revisão
   const [editingItemId, setEditingItemId] = useState<number | null>(null)
@@ -53,6 +60,9 @@ const Producer = () => {
 
   const deriveState = (o: IOrder | null): ProducerState => {
     if (!o) return 'idle'
+    // Sem olhar o status, um pedido ja Produzido, Faturado ou Cancelado caia na
+    // tela de revisao com 'Finalizar' ativo — e todo clique voltava erro.
+    if (o.status !== OrderStatus.PRODUCING) return 'idle'
     if (o.current_item) return 'producing'
     return 'review'
   }
@@ -60,6 +70,7 @@ const Producer = () => {
   const loadCurrentOrder = useCallback(async () => {
     try {
       setLoading(true)
+      setLoadFailed(false)
       const data = await orderService.getProducerCurrentOrder()
       setOrder(data)
       const state = deriveState(data)
@@ -68,6 +79,7 @@ const Producer = () => {
         setProducedQty(String(data.current_item.quantity))
       }
     } catch (error: any) {
+      setLoadFailed(true)
       addPopup({
         type: 'error',
         title: 'Erro ao carregar pedido atual',
@@ -94,11 +106,21 @@ const Producer = () => {
       addPopup({ type: 'success', title: 'Pedido atribuído!' })
     } catch (error: any) {
       const msg = error?.detail || error?.message || ''
-      addPopup({
-        type: 'info',
-        title: 'Sem pedidos disponíveis',
-        message: msg || 'Não há pedidos aguardando para hoje.',
-      })
+      // 404 e a fila vazia; qualquer outra coisa e falha de verdade e nao pode
+      // ser mascarada como 'sem pedidos'.
+      if (error?.status === 404) {
+        addPopup({
+          type: 'info',
+          title: 'Sem pedidos disponíveis',
+          message: msg || 'Não há pedidos aguardando para hoje.',
+        })
+      } else {
+        addPopup({
+          type: 'error',
+          title: 'Erro ao pegar o próximo pedido',
+          message: msg || 'Tente novamente.',
+        })
+      }
     } finally {
       setAssigningNext(false)
     }
@@ -107,7 +129,7 @@ const Producer = () => {
   /** Valida a quantidade; se divergir do previsto, abre o modal de confirmação. */
   const handleConfirmClick = () => {
     if (!order?.current_item) return
-    const qty = parseFloat(producedQty)
+    const qty = parseQuantity(producedQty)
     if (isNaN(qty) || qty <= 0) {
       addPopup({ type: 'error', title: 'Informe uma quantidade válida' })
       return
@@ -122,7 +144,7 @@ const Producer = () => {
 
   const doConfirm = async () => {
     if (!order?.current_item) return
-    const qty = parseFloat(producedQty)
+    const qty = parseQuantity(producedQty)
     setConfirmingItem(true)
     try {
       const updated = await orderService.confirmOrderItem(order.current_item.id, qty)
@@ -136,11 +158,15 @@ const Producer = () => {
         setProducedQty('')
       }
     } catch (error: any) {
+      setDivergenceOpen(false)
       addPopup({
         type: 'error',
         title: 'Erro ao confirmar item',
         message: error?.detail || error?.message || 'Tente novamente.',
       })
+      // o item pode ter sido confirmado/resetado por outra tela: ressincroniza
+      // em vez de deixar o produtor batendo num pedido que nao existe mais
+      await loadCurrentOrder()
     } finally {
       setConfirmingItem(false)
     }
@@ -157,7 +183,7 @@ const Producer = () => {
   }
 
   const handleSaveEdit = async (itemId: number) => {
-    const qty = parseFloat(editingQty)
+    const qty = parseQuantity(editingQty)
     if (isNaN(qty) || qty <= 0) {
       addPopup({ type: 'error', title: 'Quantidade inválida' })
       return
@@ -174,6 +200,7 @@ const Producer = () => {
         title: 'Erro ao atualizar',
         message: error?.detail || error?.message || 'Tente novamente.',
       })
+      await loadCurrentOrder()
     } finally {
       setSavingEdit(false)
     }
@@ -194,6 +221,7 @@ const Producer = () => {
         title: 'Erro ao finalizar pedido',
         message: error?.detail || error?.message || 'Tente novamente.',
       })
+      await loadCurrentOrder()
     } finally {
       setFinishing(false)
     }
@@ -220,18 +248,35 @@ const Producer = () => {
           <Typography variant="h5" gutterBottom fontWeight={600}>
             Produção
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Nenhum pedido em andamento. Pegue o próximo pedido disponível.
-          </Typography>
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={assigningNext ? <CircularProgress size={18} color="inherit" /> : <NextIcon />}
-            onClick={handleAssignNext}
-            disabled={assigningNext}
-          >
-            Pegar próximo pedido
-          </Button>
+          {loadFailed ? (
+            <Alert severity="error" sx={{ mb: 3, textAlign: 'left' }}>
+              Não foi possível verificar se você tem um pedido em andamento.
+              Atualize antes de pegar outro, para não duplicar produção.
+            </Alert>
+          ) : (
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              Nenhum pedido em andamento. Pegue o próximo pedido disponível.
+            </Typography>
+          )}
+          <Box display="flex" gap={1} justifyContent="center" flexWrap="wrap">
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={loadCurrentOrder}
+              disabled={assigningNext}
+            >
+              Atualizar
+            </Button>
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={assigningNext ? <CircularProgress size={18} color="inherit" /> : <NextIcon />}
+              onClick={handleAssignNext}
+              disabled={assigningNext || loadFailed}
+            >
+              Pegar próximo pedido
+            </Button>
+          </Box>
         </Paper>
       </Container>
     )
@@ -266,7 +311,12 @@ const Producer = () => {
             Item atual — {producedItems.length + 1} de {totalItems}
           </Typography>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>{productLabel(currentItem.product, { fallback: `Produto #${currentItem.product_id}` })}</strong>
+            <strong>
+              {productLabel(currentItem.product, {
+                fallback: `Produto #${currentItem.product_id}`,
+                withUnit: false,
+              })}
+            </strong>
             &nbsp;— Quantidade prevista:{' '}
             <strong>{formatQuantityWithUnit(currentItem.quantity, currentItem.product?.unit?.code)}</strong>
           </Typography>
@@ -278,10 +328,20 @@ const Producer = () => {
           >
             <TextField
               label="Quantidade produzida"
-              type="number"
               value={producedQty}
               onChange={(e) => setProducedQty(e.target.value)}
-              inputProps={{ min: 0.01, step: 0.01 }}
+              onFocus={(e) => e.target.select()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !confirmingItem) handleConfirmClick()
+              }}
+              inputProps={{ inputMode: 'decimal' }}
+              InputProps={{
+                endAdornment: currentItem.product?.unit?.code ? (
+                  <InputAdornment position="end">
+                    {currentItem.product.unit.code}
+                  </InputAdornment>
+                ) : undefined,
+              }}
               sx={{ width: { xs: '100%', sm: 240 } }}
               autoFocus
             />
@@ -317,7 +377,12 @@ const Producer = () => {
                 <TableBody>
                   {producedItems.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell>{productLabel(item.product, { fallback: `#${item.product_id}` })}</TableCell>
+                      <TableCell>
+                        {productLabel(item.product, {
+                          fallback: `#${item.product_id}`,
+                          withUnit: false,
+                        })}
+                      </TableCell>
                       <TableCell align="right">{formatQuantityWithUnit(item.quantity, item.product?.unit?.code)}</TableCell>
                       <TableCell align="right">{formatQuantityWithUnit(item.produced_quantity, item.product?.unit?.code)}</TableCell>
                     </TableRow>
@@ -333,13 +398,13 @@ const Producer = () => {
           open={divergenceOpen}
           title="Confirmar quantidade diferente"
           message={(() => {
-            const informed = parseFloat(producedQty) || 0
+            const informed = parseQuantity(producedQty) || 0
             const expected = currentItem.quantity
             const diff = informed - expected
             const more = diff > 0
             const unit = currentItem.product?.unit?.code
             return (
-              `${productLabel(currentItem.product, { fallback: 'Item' })}: você informou ` +
+              `${productLabel(currentItem.product, { fallback: 'Item', withUnit: false })}: você informou ` +
               `${formatQuantityWithUnit(informed, unit)} (previsto ${formatQuantityWithUnit(expected, unit)}). ` +
               `São ${formatQuantityWithUnit(Math.abs(diff), unit)} ${more ? 'a MAIS' : 'a MENOS'} que o previsto. ` +
               `Deseja confirmar mesmo assim?`
@@ -347,10 +412,11 @@ const Producer = () => {
           })()}
           onConfirm={doConfirm}
           onCancel={() => setDivergenceOpen(false)}
+          busy={confirmingItem}
           confirmText={confirmingItem ? 'Confirmando...' : 'Sim, confirmar'}
           cancelText="Voltar e corrigir"
           confirmColor={
-            parseFloat(producedQty) > currentItem.quantity ? 'warning' : 'error'
+            parseQuantity(producedQty) > currentItem.quantity ? 'warning' : 'error'
           }
         />
       </Container>
@@ -395,7 +461,12 @@ const Producer = () => {
               <TableBody>
                 {producedItems.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell>{productLabel(item.product, { fallback: `#${item.product_id}` })}</TableCell>
+                    <TableCell>
+                      {productLabel(item.product, {
+                        fallback: `#${item.product_id}`,
+                        withUnit: false,
+                      })}
+                    </TableCell>
                     <TableCell align="right">{formatQuantityWithUnit(item.quantity, item.product?.unit?.code)}</TableCell>
                     <TableCell align="right">
                       {editingItemId === item.id ? (
@@ -405,7 +476,14 @@ const Producer = () => {
                           value={editingQty}
                           onChange={(e) => setEditingQty(e.target.value)}
                           inputProps={{ min: 0.01, step: 0.01 }}
-                          sx={{ width: 100 }}
+                          InputProps={{
+                            endAdornment: item.product?.unit?.code ? (
+                              <InputAdornment position="end">
+                                {item.product.unit.code}
+                              </InputAdornment>
+                            ) : undefined,
+                          }}
+                          sx={{ width: 140 }}
                           autoFocus
                         />
                       ) : (
@@ -418,7 +496,10 @@ const Producer = () => {
                           }
                           fontWeight={500}
                         >
-                          {item.produced_quantity ?? '-'}
+                          {formatQuantityWithUnit(
+                            item.produced_quantity,
+                            item.product?.unit?.code,
+                          )}
                         </Typography>
                       )}
                     </TableCell>
@@ -445,9 +526,15 @@ const Producer = () => {
                         </Box>
                       ) : (
                         <Tooltip title="Editar quantidade">
-                          <IconButton size="small" onClick={() => handleStartEdit(item)}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleStartEdit(item)}
+                              disabled={editingItemId !== null}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       )}
                     </TableCell>

@@ -15,6 +15,8 @@ interface ConfirmDialogProps {
   onCancel: () => void
   confirmText?: string
   cancelText?: string
+  /** Requisicao em andamento: trava os dois botoes para evitar duplo envio. */
+  busy?: boolean
   confirmColor?: 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success'
 }
 
@@ -27,11 +29,12 @@ const ConfirmDialog = ({
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
   confirmColor = 'error',
+  busy = false,
 }: ConfirmDialogProps) => {
   return (
     <Dialog
       open={open}
-      onClose={onCancel}
+      onClose={busy ? undefined : onCancel}
       aria-labelledby="confirm-dialog-title"
       aria-describedby="confirm-dialog-description"
     >
@@ -40,10 +43,16 @@ const ConfirmDialog = ({
         <DialogContentText id="confirm-dialog-description">{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel} color="inherit">
+        <Button onClick={onCancel} color="inherit" disabled={busy}>
           {cancelText}
         </Button>
-        <Button onClick={onConfirm} color={confirmColor} variant="contained" autoFocus>
+        <Button
+          onClick={onConfirm}
+          color={confirmColor}
+          variant="contained"
+          disabled={busy}
+          autoFocus
+        >
           {confirmText}
         </Button>
       </DialogActions>
