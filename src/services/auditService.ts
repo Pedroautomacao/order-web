@@ -2,8 +2,12 @@ import { api as apiService, ApiService } from './api'
 
 export interface IAuditLog {
   id: number
+  /** Chave estável, usada nos filtros (ex.: "order:create"). */
   action: string
   entity: string
+  /** Rótulo em português para exibição. */
+  action_label: string
+  entity_label: string
   entity_id: number | null
   description: string | null
   user_id: number | null
@@ -21,9 +25,16 @@ export interface IAuditFilters {
   offset?: number
 }
 
+export interface IAuditFilterOption {
+  /** Valor enviado no filtro. */
+  value: string
+  /** Texto exibido no seletor. */
+  label: string
+}
+
 export interface IAuditFilterOptions {
-  actions: string[]
-  entities: string[]
+  actions: IAuditFilterOption[]
+  entities: IAuditFilterOption[]
 }
 
 class AuditService {

@@ -89,9 +89,14 @@ const Audit = () => {
       width: 170,
       valueFormatter: (params) => formatDate(params.value),
     },
-    { field: 'action', headerName: 'Ação', width: 140 },
-    { field: 'entity', headerName: 'Entidade', width: 120 },
-    { field: 'entity_id', headerName: 'ID entidade', width: 110, valueGetter: (p) => p.value ?? '-' },
+    { field: 'action_label', headerName: 'Ação', width: 220 },
+    { field: 'entity_label', headerName: 'Entidade', width: 150 },
+    {
+      field: 'entity_id',
+      headerName: 'Registro',
+      width: 100,
+      valueGetter: (p) => (p.value != null ? `#${p.value}` : '-'),
+    },
     { field: 'username', headerName: 'Usuário', width: 140, valueGetter: (p) => p.value ?? '-' },
     {
       field: 'description',
@@ -113,15 +118,15 @@ const Audit = () => {
               label="Ação"
               value={actionFilter}
               onChange={setActionFilter}
-              minWidth={160}
-              options={[{ value: '', label: 'Todas' }, ...options.actions.map((a) => ({ value: a, label: a }))]}
+              minWidth={220}
+              options={[{ value: '', label: 'Todas' }, ...options.actions]}
             />
             <SelectField
               label="Entidade"
               value={entityFilter}
               onChange={setEntityFilter}
               minWidth={150}
-              options={[{ value: '', label: 'Todas' }, ...options.entities.map((e) => ({ value: e, label: e }))]}
+              options={[{ value: '', label: 'Todas' }, ...options.entities]}
             />
             <SelectField
               label="Usuário"
@@ -151,13 +156,15 @@ const Audit = () => {
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  {log.action} · {log.entity}
+                  {log.action_label}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   #{log.id}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
+                {log.entity_label}
+                {log.entity_id != null ? ` #${log.entity_id}` : ''} ·{' '}
                 {formatDate(log.created_at)} — {log.username ?? '-'}
               </Typography>
               {log.description && (
