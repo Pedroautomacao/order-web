@@ -1,12 +1,23 @@
 import { IOrder, IOrderCreate, IOrderUpdate } from 'interfaces/IOrder'
+import { IPage } from 'interfaces/IPage'
 
 import { api as apiService, ApiService } from './api'
 
 class OrderService {
   constructor(private readonly api: ApiService) {}
 
-  public getOrders = async (search?: string, status?: string, scheduledDate?: string): Promise<IOrder[]> => {
-    const params: Record<string, string> = {}
+  /**
+   * Lista paginada de pedidos, do mais recente para o mais antigo por data de
+   * entrega. `page` começa em 1.
+   */
+  public getOrders = async (
+    search?: string,
+    status?: string,
+    scheduledDate?: string,
+    page = 1,
+    pageSize = 20,
+  ): Promise<IPage<IOrder>> => {
+    const params: Record<string, string | number> = { page, page_size: pageSize }
     if (search?.trim()) params.search = search.trim()
     if (status?.trim()) params.status = status.trim()
     if (scheduledDate?.trim()) params.scheduled_date = scheduledDate.trim()

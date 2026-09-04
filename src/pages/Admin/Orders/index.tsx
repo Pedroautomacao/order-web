@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@mui/material'
 import { GridColDef, GridActionsCellItem } from '@mui/x-data-grid'
 import {
@@ -43,7 +43,15 @@ const Orders = () => {
   const [loading, setLoading] = useState(true)
   const [searchInput, setSearchInput, debouncedSearch] = useDebouncedSearch('', 300)
   const [statusFilter, setStatusFilter] = useState('')
-  const [scheduledDateFilter, setScheduledDateFilter] = useState(new Date().toISOString().split('T')[0])
+  // Sem data fixa: a tela mostra a base inteira, do mais recente para o mais
+  // antigo, e a data continua disponível como filtro.
+  const [scheduledDateFilter, setScheduledDateFilter] = useState('')
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(20)
+  const [rowCount, setRowCount] = useState(0)
+  // "última requisição vence": trocar de página/filtro rápido deixa respostas
+  // concorrentes em voo, e a antiga sobrescrevia a nova
+  const requisicaoAtual = useRef(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [payTarget, setPayTarget] = useState<IOrder | null>(null)
   const [paying, setPaying] = useState(false)
@@ -56,28 +64,55 @@ const Orders = () => {
   const [rescheduling, setRescheduling] = useState(false)
 
   const loadOrders = useCallback(async () => {
+    const id = ++requisicaoAtual.current
     try {
       setLoading(true)
       const data = await orderService.getOrders(
         debouncedSearch || undefined,
         statusFilter || undefined,
         scheduledDateFilter || undefined,
+        page + 1,
+        pageSize,
       )
-      setOrders(data)
+      if (id !== requisicaoAtual.current) return
+      // defesa para a janela de deploy em que o front sobe antes da API e a
+      // resposta ainda vem como array, sem envelope
+      setOrders(Array.isArray(data) ? data : data?.items ?? [])
+      setRowCount(Array.isArray(data) ? data.length : data?.total ?? 0)
     } catch (error: any) {
+      if (id !== requisicaoAtual.current) return
+      // não deixar linhas e total da consulta anterior na tela: eles não
+      // correspondem mais ao filtro nem à página selecionada
+      setOrders([])
+      setRowCount(0)
       addPopup({
         type: 'error',
         title: 'Erro ao carregar pedidos',
         message: error?.detail || error?.message || 'Tente novamente mais tarde',
       })
     } finally {
-      setLoading(false)
+      if (id === requisicaoAtual.current) setLoading(false)
     }
-  }, [addPopup, debouncedSearch, statusFilter, scheduledDateFilter])
+  }, [addPopup, debouncedSearch, statusFilter, scheduledDateFilter, page, pageSize])
 
   useEffect(() => {
     loadOrders()
   }, [loadOrders])
+
+  /**
+   * Mudar um filtro volta para a primeira página — senão a tela pede uma página
+   * que o novo filtro talvez não tenha e aparece vazia. Feito no próprio
+   * handler, e não por efeito: por efeito saía uma requisição a mais, com a
+   * página antiga e o filtro novo.
+   */
+  const comResetDePagina =
+    <T,>(aplicar: (valor: T) => void) =>
+    (valor: T) => {
+      aplicar(valor)
+      // React descarta o set quando o valor não muda, então na primeira
+      // página isto não gera render nem requisição extra
+      setPage((atual) => (atual === 0 ? atual : 0))
+    }
 
   const handleMarkPaid = async () => {
     if (!payTarget) return
@@ -261,18 +296,18 @@ const Orders = () => {
           <>
             <SearchField
               value={searchInput}
-              onChange={setSearchInput}
+              onChange={comResetDePagina(setSearchInput)}
               placeholder="Buscar por ID, nome ou CPF/CNPJ"
             />
             <DateField
               label="Data de entrega"
               value={scheduledDateFilter}
-              onChange={setScheduledDateFilter}
+              onChange={comResetDePagina(setScheduledDateFilter)}
             />
             <SelectField
               label="Status"
               value={statusFilter}
-              onChange={setStatusFilter}
+              onChange={comResetDePagina(setStatusFilter)}
               options={[
                 { value: '', label: 'Todos' },
                 ...Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => ({ value, label })),
@@ -288,6 +323,15 @@ const Orders = () => {
         getRowId={(row) => row.id}
         loading={loading}
         emptyTitle="Nenhum pedido encontrado"
+        serverPagination={{
+          rowCount,
+          page,
+          pageSize,
+          onChange: (p, size) => {
+            setPage(p)
+            setPageSize(size)
+          },
+        }}
         renderMobileCard={(order) => (
           <OrderListCard order={order} onView={(o) => navigate(`/admin/orders/${o.id}`)} />
         )}
@@ -297,7 +341,12 @@ const Orders = () => {
         open={modalOpen}
         title="Criar Pedido"
         onClose={() => setModalOpen(false)}
-        onCreated={loadOrders}
+        onCreated={() => {
+          // o pedido novo é o mais recente: sem voltar para a primeira página
+          // ele frequentemente não aparece
+          setPage(0)
+          loadOrders()
+        }}
       />
 
       <ConfirmDialog
