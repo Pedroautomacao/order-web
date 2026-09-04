@@ -22,8 +22,16 @@ export interface IOrder {
   total_items: number
   can_finish: boolean
   client?: IClient
-  created_by?: IUser
+  /** Quem registrou o pedido. Só vem nas respostas de detalhe. */
+  created_by?: IUserRef
   assigned_user?: IUser
+}
+
+/** Referência mínima a um usuário, para exibir autoria. */
+export interface IUserRef {
+  id: number
+  username: string
+  full_name: string
 }
 
 export interface IOrderItem {

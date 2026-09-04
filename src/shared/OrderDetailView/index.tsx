@@ -89,6 +89,10 @@ export const OrderDetailView = ({ order, onBack, actions, extraFields }: OrderDe
         </Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           <Field label="Cliente" value={order.client?.name ?? '-'} />
+          <Field
+            label="Criado por"
+            value={order.created_by?.full_name || order.created_by?.username || '-'}
+          />
           <Field label="Data de entrega" value={formatDate(order.scheduled_date)} />
           <Field label="Prioridade" value={order.priority || '-'} />
           <Field label="Total" value={formatCurrency(order.total_amount)} />
