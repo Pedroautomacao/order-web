@@ -89,8 +89,20 @@ const Audit = () => {
       width: 170,
       valueFormatter: (params) => formatDate(params.value),
     },
-    { field: 'action_label', headerName: 'Ação', width: 220 },
-    { field: 'entity_label', headerName: 'Entidade', width: 150 },
+    // fallback para a chave crua: se a API estiver defasada e não mandar o
+    // rótulo, é melhor mostrar "order:create" do que uma coluna vazia
+    {
+      field: 'action_label',
+      headerName: 'Ação',
+      width: 220,
+      valueGetter: (p) => p.row.action_label || p.row.action || '-',
+    },
+    {
+      field: 'entity_label',
+      headerName: 'Entidade',
+      width: 150,
+      valueGetter: (p) => p.row.entity_label || p.row.entity || '-',
+    },
     {
       field: 'entity_id',
       headerName: 'Registro',
@@ -156,14 +168,14 @@ const Audit = () => {
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  {log.action_label}
+                  {log.action_label || log.action}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   #{log.id}
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                {log.entity_label}
+                {log.entity_label || log.entity}
                 {log.entity_id != null ? ` #${log.entity_id}` : ''} ·{' '}
                 {formatDate(log.created_at)} — {log.username ?? '-'}
               </Typography>

@@ -5,9 +5,9 @@ export interface IAuditLog {
   /** Chave estável, usada nos filtros (ex.: "order:create"). */
   action: string
   entity: string
-  /** Rótulo em português para exibição. */
-  action_label: string
-  entity_label: string
+  /** Rótulo em português para exibição. Ausente em API anterior à tradução. */
+  action_label?: string
+  entity_label?: string
   entity_id: number | null
   description: string | null
   user_id: number | null
@@ -37,6 +37,19 @@ export interface IAuditFilterOptions {
   entities: IAuditFilterOption[]
 }
 
+/**
+ * Normaliza as opções de filtro. API anterior à tradução devolve string[];
+ * sem isto o seletor renderiza itens vazios em vez de degradar para a chave.
+ */
+export function normalizeFilterOptions(
+  raw: (IAuditFilterOption | string)[] | null | undefined,
+): IAuditFilterOption[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((o) =>
+    typeof o === 'string' ? { value: o, label: o } : o,
+  )
+}
+
 class AuditService {
   constructor(private readonly api: ApiService) {}
 
@@ -53,7 +66,11 @@ class AuditService {
   }
 
   getFilterOptions = async (): Promise<IAuditFilterOptions> => {
-    return this.api.get('/audit/options')
+    const data = await this.api.get('/audit/options')
+    return {
+      actions: normalizeFilterOptions(data?.actions),
+      entities: normalizeFilterOptions(data?.entities),
+    }
   }
 }
 
