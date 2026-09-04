@@ -8,7 +8,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
   Box,
   FormGroup,
   FormControlLabel,
@@ -24,6 +23,21 @@ import { Add as AddIcon, Edit as EditIcon } from '@mui/icons-material'
 import { IRole, IMenuGroup, IPermission, PERMISSION_LABELS_PT } from 'interfaces/IUser'
 import userService from 'services/userService'
 import { usePopup } from 'hooks/usePopup'
+
+/**
+ * Linha com texto que pode quebrar em vários e um botão à direita.
+ * O texto ocupa o espaço que sobra e quebra dentro dele; o botão não encolhe.
+ * Com ListItemSecondaryAction (absoluto) a lista de menus do Admin passava por
+ * baixo do "Editar".
+ */
+const LINHA_SX = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: 1,
+} as const
+
+const ACAO_SX = { flexShrink: 0, mt: 0.25 } as const
+
 
 interface RoleMenuModalProps {
   open: boolean
@@ -234,13 +248,20 @@ export default function RoleMenuModal({ open, onClose }: RoleMenuModalProps) {
                 </Box>
                 <List dense sx={{ mb: 2 }}>
                   {menuGroups.map((mg) => (
-                    <ListItem key={mg.id}>
-                      <ListItemText primary={mg.name} secondary={mg.code} />
-                      <ListItemSecondaryAction>
-                        <Button size="small" startIcon={<EditIcon />} onClick={() => handleEditGroup(mg)}>
-                          Editar
-                        </Button>
-                      </ListItemSecondaryAction>
+                    <ListItem key={mg.id} sx={LINHA_SX}>
+                      <ListItemText
+                        primary={mg.name}
+                        secondary={mg.code}
+                        sx={{ my: 0, pr: 1 }}
+                      />
+                      <Button
+                        size="small"
+                        startIcon={<EditIcon />}
+                        onClick={() => handleEditGroup(mg)}
+                        sx={ACAO_SX}
+                      >
+                        Editar
+                      </Button>
                     </ListItem>
                   ))}
                 </List>
@@ -250,7 +271,7 @@ export default function RoleMenuModal({ open, onClose }: RoleMenuModalProps) {
                 </Typography>
                 <List dense>
                   {roles.map((role) => (
-                    <ListItem key={role.id}>
+                    <ListItem key={role.id} sx={LINHA_SX}>
                       <ListItemText
                         primary={role.name}
                         secondary={
@@ -258,12 +279,11 @@ export default function RoleMenuModal({ open, onClose }: RoleMenuModalProps) {
                             ? role.menu_groups.map((g) => g.name).join(', ')
                             : 'Nenhum menu'
                         }
+                        sx={{ my: 0, pr: 1 }}
                       />
-                      <ListItemSecondaryAction>
-                        <Button size="small" onClick={() => handleEdit(role)}>
-                          Editar
-                        </Button>
-                      </ListItemSecondaryAction>
+                      <Button size="small" onClick={() => handleEdit(role)} sx={ACAO_SX}>
+                        Editar
+                      </Button>
                     </ListItem>
                   ))}
                 </List>
