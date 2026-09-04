@@ -251,32 +251,25 @@ const Producer = () => {
           {loadFailed ? (
             <Alert severity="error" sx={{ mb: 3, textAlign: 'left' }}>
               Não foi possível verificar se você tem um pedido em andamento.
-              Atualize antes de pegar outro, para não duplicar produção.
+              Toque no botão abaixo para tentar de novo.
             </Alert>
           ) : (
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
               Nenhum pedido em andamento. Pegue o próximo pedido disponível.
             </Typography>
           )}
-          <Box display="flex" gap={1} justifyContent="center" flexWrap="wrap">
-            <Button
-              variant="outlined"
-              size="large"
-              onClick={loadCurrentOrder}
-              disabled={assigningNext}
-            >
-              Atualizar
-            </Button>
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={assigningNext ? <CircularProgress size={18} color="inherit" /> : <NextIcon />}
-              onClick={handleAssignNext}
-              disabled={assigningNext || loadFailed}
-            >
-              Pegar próximo pedido
-            </Button>
-          </Box>
+          {/* Um botão só: o servidor devolve o pedido em andamento quando já
+              existe um, em vez de atribuir outro, então ele também serve de
+              retentativa quando o carregamento falhou. */}
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={assigningNext ? <CircularProgress size={18} color="inherit" /> : <NextIcon />}
+            onClick={handleAssignNext}
+            disabled={assigningNext}
+          >
+            Pegar próximo pedido
+          </Button>
         </Paper>
       </Container>
     )
