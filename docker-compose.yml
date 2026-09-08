@@ -1,0 +1,22 @@
+# Produção. Nada é publicado no host: o Nginx Proxy Manager, que já está na
+# proxy_net, é quem faz o proxy para a porta 80 deste container.
+services:
+  web:
+    build:
+      context: .
+      args:
+        # Vazio de propósito. O bundle cai no default /api do src/settings.ts,
+        # rota relativa que o proxy reverso resolve. Preencha somente se a API
+        # for servida em outra origem (ex.: https://api.exemplo.com).
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-}
+    container_name: order_web
+    restart: always
+    expose:
+      - "80"
+    networks:
+      - proxy_net
+
+# Rede criada fora deste projeto, junto do Nginx Proxy Manager.
+networks:
+  proxy_net:
+    external: true

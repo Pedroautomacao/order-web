@@ -1,0 +1,25 @@
+# Controle de versão e configuração de IDE.
+.git
+.gitignore
+.idea
+
+# Reinstalado do zero pelo `npm ci` no estágio de build — copiar o node_modules
+# do Windows para dentro da imagem Linux é pesado e traz binários errados.
+node_modules
+
+# Build local: quem gera o bundle da imagem é o estágio de build.
+build
+coverage
+
+# Variáveis locais não entram na imagem.
+.env
+.env.*
+
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+README.md
+Dockerfile
+docker-compose*.yml
