@@ -9,7 +9,7 @@ class UserService {
     const params: Record<string, string | boolean> = {};
     if (search?.trim()) params.search = search.trim();
     if (isActive !== undefined && isActive !== null) params.is_active = isActive;
-    return this.api.get("/users/", { params });
+    return this.api.get("/users", { params });
   };
 
   public getRoles = async (): Promise<IRole[]> => {

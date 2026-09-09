@@ -9,7 +9,7 @@ class ClientService {
     const params: Record<string, string | boolean> = {}
     if (search?.trim()) params.search = search.trim()
     if (isActive !== undefined && isActive !== null) params.is_active = isActive
-    return this.api.get('/clients/', { params })
+    return this.api.get('/clients', { params })
   }
 
   public getClient = async (id: number): Promise<IClient> => {
