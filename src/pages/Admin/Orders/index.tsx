@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Button } from '@mui/material'
+import { Box, Button } from '@mui/material'
 import { GridColDef, GridActionsCellItem } from '@mui/x-data-grid'
 import {
   Visibility as ViewIcon,
@@ -10,6 +10,7 @@ import {
   PriorityHigh as PriorityIcon,
   CheckCircle as ApproveIcon,
   Block as RecuseIcon,
+  PictureAsPdf as PdfIcon,
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 
@@ -24,6 +25,7 @@ import {
 } from 'interfaces/IOrder'
 import { usePopup } from 'hooks/usePopup'
 import { useDebouncedSearch } from 'hooks/useDebounce'
+import { todayInSaoPaulo } from 'utils/orderDateUtils'
 import {
   PageLayout,
   PageHeader,
@@ -64,6 +66,10 @@ const Orders = () => {
   // concorrentes em voo, e a antiga sobrescrevia a nova
   const requisicaoAtual = useRef(0)
   const [modalOpen, setModalOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
+  // pré-selecionada no hoje de São Paulo, que é o dia que o gestor imprime
+  const [exportDate, setExportDate] = useState(todayInSaoPaulo())
+  const [exporting, setExporting] = useState(false)
   const [payTarget, setPayTarget] = useState<IOrder | null>(null)
   const [paying, setPaying] = useState(false)
   const [cancelTarget, setCancelTarget] = useState<IOrder | null>(null)
@@ -251,6 +257,38 @@ const Orders = () => {
       setRescheduling,
     )
 
+  const abrirExportacao = () => {
+    // reabre sempre no dia de hoje, não na data da última impressão
+    setExportDate(todayInSaoPaulo())
+    setExportOpen(true)
+  }
+
+  const exportarPdf = async () => {
+    setExporting(true)
+    try {
+      const arquivo = await orderService.exportOrdersPdf(exportDate)
+      // o sandbox do navegador não deixa abrir o Blob direto: cria um link
+      // temporário, dispara o download e devolve a URL
+      const url = window.URL.createObjectURL(arquivo)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `pedidos-${exportDate}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      setExportOpen(false)
+    } catch (error: any) {
+      addPopup({
+        type: 'error',
+        title: 'Não foi possível gerar o PDF',
+        message: error?.detail || error?.message || 'Tente novamente.',
+      })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const columns: GridColDef[] = [
     { field: 'id', headerName: 'ID', width: 70 },
     {
@@ -355,9 +393,14 @@ const Orders = () => {
       <PageHeader
         title="Pedidos"
         action={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)}>
-            Criar Pedido
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button variant="outlined" startIcon={<PdfIcon />} onClick={abrirExportacao}>
+              Exportar pedidos .pdf
+            </Button>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)}>
+              Criar Pedido
+            </Button>
+          </Box>
         }
         filters={
           <>
@@ -459,6 +502,23 @@ const Orders = () => {
         cancelText="Voltar"
         confirmColor="error"
       />
+
+      <FormModal
+        open={exportOpen}
+        title="Exportar pedidos em PDF"
+        onClose={() => setExportOpen(false)}
+        onSubmit={exportarPdf}
+        submitLabel={exporting ? 'Gerando...' : 'Gerar PDF'}
+        submitting={exporting || !exportDate}
+        maxWidth="xs"
+      >
+        <DateField
+          label="Data de entrega"
+          value={exportDate}
+          onChange={setExportDate}
+          fullWidth
+        />
+      </FormModal>
 
       <ConfirmDialog
         open={!!approveTarget}

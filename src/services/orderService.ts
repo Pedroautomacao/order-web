@@ -48,6 +48,19 @@ class OrderService {
     return this.api.post('/orders', data)
   }
 
+  /**
+   * Romaneio de produção em PDF para uma data de entrega.
+   *
+   * Vem como Blob: o axios entregaria bytes corrompidos se tentasse decodificar
+   * o PDF como texto.
+   */
+  public exportOrdersPdf = async (scheduledDate: string): Promise<Blob> => {
+    return this.api.get('/orders/export/pdf', {
+      params: { scheduledDate },
+      responseType: 'blob',
+    })
+  }
+
   /** Edita o pedido: itens, quantidades e preço cobrado (order:update). */
   public updateOrder = async (id: number, data: IOrderUpdate): Promise<IOrder> => {
     return this.api.put(`/orders/${id}`, data)
