@@ -23,7 +23,11 @@ import { IOrderCreate, PaymentMethod } from 'interfaces/IOrder'
 import { IClient, IClientCredit } from 'interfaces/IClient'
 import { IProduct } from 'interfaces/IProduct'
 import { usePopup } from 'hooks/usePopup'
-import { getMinOrderDate } from 'utils/orderDateUtils'
+import {
+  allowsSameDayDelivery,
+  formatIsoDate,
+  getMinOrderDate,
+} from 'utils/orderDateUtils'
 import FormModal from 'shared/FormModal'
 import { formatCurrency, productLabel } from 'shared/format'
 
@@ -36,7 +40,19 @@ interface OrderFormValues {
 
 const orderSchema = yup.object({
   client: yup.object().nullable().required('Selecione um cliente'),
-  scheduledDate: yup.string().required('Informe a data de entrega'),
+  scheduledDate: yup
+    .string()
+    .required('Informe a data de entrega')
+    // Mesma regra do backend: hoje vale só até as 16h de São Paulo. Sem isto o
+    // usuário só descobria o problema depois de enviar, porque o atributo `min`
+    // do input nativo não passa pelo react-hook-form.
+    .test(
+      'data-minima',
+      () =>
+        `A entrega mais próxima é ${formatIsoDate(getMinOrderDate())}` +
+        (allowsSameDayDelivery() ? '' : ' — pedidos para o mesmo dia só até as 16h'),
+      value => !value || value >= getMinOrderDate(),
+    ),
   paymentMethod: yup.string().required(),
   items: yup
     .array()

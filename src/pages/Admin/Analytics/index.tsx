@@ -44,14 +44,14 @@ import {
   formatCurrency,
 } from 'shared'
 import type { BarChartPoint } from 'shared'
+import { todayInSaoPaulo } from 'utils/orderDateUtils'
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
-const firstDayOfMonth = () => {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]
-}
-const todayStr = () => new Date().toISOString().split('T')[0]
+// Datas no fuso de São Paulo: toISOString() devolveria a data em UTC, que à
+// noite já é o dia seguinte.
+const firstDayOfMonth = () => `${todayInSaoPaulo().slice(0, 7)}-01`
+const todayStr = () => todayInSaoPaulo()
 
 const toChart = (points: IByDayPoint[]): BarChartPoint[] =>
   points.map((p) => {

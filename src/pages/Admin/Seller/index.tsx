@@ -32,7 +32,10 @@ const Seller = () => {
   const [loading, setLoading] = useState(true)
   const [searchInput, setSearchInput, debouncedSearch] = useDebouncedSearch('', 300)
   const [statusFilter, setStatusFilter] = useState('')
-  const [scheduledDateFilter, setScheduledDateFilter] = useState(new Date().toISOString().split('T')[0])
+  // Sem data pré-preenchida: a API já devolve de hoje em diante, da data
+  // mais próxima para a mais distante. A data passada aparece só quando o
+  // vendedor filtra por ela.
+  const [scheduledDateFilter, setScheduledDateFilter] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
 
   const loadOrders = useCallback(async () => {

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import orderService from 'services/orderService'
 import { IOrder, OrderStatus } from 'interfaces/IOrder'
 import { usePopup } from 'hooks/usePopup'
+import { todayInSaoPaulo } from 'utils/orderDateUtils'
 import { useDebouncedSearch } from 'hooks/useDebounce'
 import {
   PageLayout,
@@ -30,7 +31,7 @@ const Fiscal = () => {
   const [loading, setLoading] = useState(true)
   const [searchInput, setSearchInput, debouncedSearch] = useDebouncedSearch('', 300)
   const [statusFilter, setStatusFilter] = useState('')
-  const [scheduledDateFilter, setScheduledDateFilter] = useState(new Date().toISOString().split('T')[0])
+  const [scheduledDateFilter, setScheduledDateFilter] = useState(todayInSaoPaulo())
 
   const loadOrders = useCallback(async () => {
     try {
