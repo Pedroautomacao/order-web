@@ -8,11 +8,20 @@ import {
   Cancel as CancelIcon,
   Event as RescheduleIcon,
   PriorityHigh as PriorityIcon,
+  CheckCircle as ApproveIcon,
+  Block as RecuseIcon,
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 
 import orderService from 'services/orderService'
-import { IOrder, ORDER_STATUS_LABELS, OrderStatus, PaymentMethod } from 'interfaces/IOrder'
+import {
+  IOrder,
+  ORDER_STATUS_LABELS,
+  OrderStatus,
+  PaymentMethod,
+  PRODUCTION_APPROVAL_LABELS,
+  ProductionApproval,
+} from 'interfaces/IOrder'
 import { usePopup } from 'hooks/usePopup'
 import { useDebouncedSearch } from 'hooks/useDebounce'
 import {
@@ -21,6 +30,7 @@ import {
   DataTable,
   StatusChip,
   PaymentChip,
+  ApprovalChip,
   OrderListCard,
   OrderFormModal,
   ConfirmDialog,
@@ -43,6 +53,7 @@ const Orders = () => {
   const [loading, setLoading] = useState(true)
   const [searchInput, setSearchInput, debouncedSearch] = useDebouncedSearch('', 300)
   const [statusFilter, setStatusFilter] = useState('')
+  const [approvalFilter, setApprovalFilter] = useState('')
   // Sem data fixa: a tela mostra a base inteira, do mais recente para o mais
   // antigo, e a data continua disponível como filtro.
   const [scheduledDateFilter, setScheduledDateFilter] = useState('')
@@ -59,6 +70,9 @@ const Orders = () => {
   const [canceling, setCanceling] = useState(false)
   const [prioTarget, setPrioTarget] = useState<IOrder | null>(null)
   const [prioritizing, setPrioritizing] = useState(false)
+  const [approveTarget, setApproveTarget] = useState<IOrder | null>(null)
+  const [recuseTarget, setRecuseTarget] = useState<IOrder | null>(null)
+  const [decidindoProducao, setDecidindoProducao] = useState(false)
   const [rescheduleTarget, setRescheduleTarget] = useState<IOrder | null>(null)
   const [newDate, setNewDate] = useState('')
   const [rescheduling, setRescheduling] = useState(false)
@@ -73,6 +87,7 @@ const Orders = () => {
         scheduledDateFilter || undefined,
         page + 1,
         pageSize,
+        approvalFilter || undefined,
       )
       if (id !== requisicaoAtual.current) return
       // defesa para a janela de deploy em que o front sobe antes da API e a
@@ -93,7 +108,15 @@ const Orders = () => {
     } finally {
       if (id === requisicaoAtual.current) setLoading(false)
     }
-  }, [addPopup, debouncedSearch, statusFilter, scheduledDateFilter, page, pageSize])
+  }, [
+    addPopup,
+    debouncedSearch,
+    statusFilter,
+    approvalFilter,
+    scheduledDateFilter,
+    page,
+    pageSize,
+  ])
 
   useEffect(() => {
     loadOrders()
@@ -147,6 +170,14 @@ const Orders = () => {
   const canPrioritize = (o: IOrder) =>
     o.priority !== 'A' &&
     ![OrderStatus.CANCELED, OrderStatus.BILLED].includes(o.status)
+  // Liberação de produção: reversível nos dois sentidos, para corrigir engano.
+  // Some em pedido encerrado, que é onde o backend também recusa.
+  const podeDecidirProducao = (o: IOrder) =>
+    ![OrderStatus.CANCELED, OrderStatus.BILLED].includes(o.status)
+  const canApprove = (o: IOrder) =>
+    podeDecidirProducao(o) && o.production_approval !== ProductionApproval.APPROVED
+  const canRecuse = (o: IOrder) =>
+    podeDecidirProducao(o) && o.production_approval !== ProductionApproval.RECUSED
 
   const runAction = async (
     fn: () => Promise<unknown>,
@@ -189,6 +220,24 @@ const Orders = () => {
       setPrioritizing,
     )
 
+  const handleApproveProduction = () =>
+    approveTarget &&
+    runAction(
+      () => orderService.approveProduction(approveTarget.id),
+      'Produção aprovada',
+      () => setApproveTarget(null),
+      setDecidindoProducao,
+    )
+
+  const handleRecuseProduction = () =>
+    recuseTarget &&
+    runAction(
+      () => orderService.recuseProduction(recuseTarget.id),
+      'Produção recusada',
+      () => setRecuseTarget(null),
+      setDecidindoProducao,
+    )
+
   const openReschedule = (o: IOrder) => {
     setNewDate(o.scheduled_date)
     setRescheduleTarget(o)
@@ -222,6 +271,12 @@ const Orders = () => {
       headerName: 'Status',
       width: 140,
       renderCell: (params) => <StatusChip status={params.row.status} />,
+    },
+    {
+      field: 'production_approval',
+      headerName: 'Produção',
+      width: 180,
+      renderCell: (params) => <ApprovalChip approval={params.row.production_approval} />,
     },
     {
       field: 'payment_method',
@@ -262,6 +317,16 @@ const Orders = () => {
           actions.push(
             <GridActionsCellItem key="pay" icon={<PaidIcon />} label="Marcar como pago"
               onClick={() => setPayTarget(o)} showInMenu />,
+          )
+        if (canApprove(o))
+          actions.push(
+            <GridActionsCellItem key="approve" icon={<ApproveIcon />} label="Aprovar produção"
+              onClick={() => setApproveTarget(o)} showInMenu />,
+          )
+        if (canRecuse(o))
+          actions.push(
+            <GridActionsCellItem key="recuse" icon={<RecuseIcon />} label="Recusar produção"
+              onClick={() => setRecuseTarget(o)} showInMenu />,
           )
         if (canPrioritize(o))
           actions.push(
@@ -311,6 +376,18 @@ const Orders = () => {
               options={[
                 { value: '', label: 'Todos' },
                 ...Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => ({ value, label })),
+              ]}
+            />
+            <SelectField
+              label="Produção"
+              value={approvalFilter}
+              onChange={comResetDePagina(setApprovalFilter)}
+              options={[
+                { value: '', label: 'Todas' },
+                ...Object.entries(PRODUCTION_APPROVAL_LABELS).map(([value, label]) => ({
+                  value,
+                  label,
+                })),
               ]}
             />
           </>
@@ -377,6 +454,40 @@ const Orders = () => {
         onConfirm={handleCancel}
         onCancel={() => setCancelTarget(null)}
         confirmText={canceling ? 'Cancelando...' : 'Confirmar cancelamento'}
+        cancelText="Voltar"
+        confirmColor="error"
+      />
+
+      <ConfirmDialog
+        open={!!approveTarget}
+        title="Aprovar produção"
+        message={
+          approveTarget
+            ? `Liberar o pedido #${approveTarget.id} de ${
+                approveTarget.client?.name ?? ''
+              } para produção? Ele passa a entrar na fila do produtor.`
+            : ''
+        }
+        onConfirm={handleApproveProduction}
+        onCancel={() => setApproveTarget(null)}
+        confirmText={decidindoProducao ? 'Aprovando...' : 'Aprovar produção'}
+        cancelText="Voltar"
+        confirmColor="success"
+      />
+
+      <ConfirmDialog
+        open={!!recuseTarget}
+        title="Recusar produção"
+        message={
+          recuseTarget
+            ? `Recusar a produção do pedido #${recuseTarget.id} de ${
+                recuseTarget.client?.name ?? ''
+              }? Ele sai da fila do produtor. Dá para aprovar depois.`
+            : ''
+        }
+        onConfirm={handleRecuseProduction}
+        onCancel={() => setRecuseTarget(null)}
+        confirmText={decidindoProducao ? 'Recusando...' : 'Recusar produção'}
         cancelText="Voltar"
         confirmColor="error"
       />

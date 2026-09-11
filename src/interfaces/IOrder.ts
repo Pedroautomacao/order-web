@@ -6,6 +6,8 @@ export interface IOrder {
   id: number
   priority: string
   status: OrderStatus
+  /** Liberação para produzir. Só pedidos aprovados entram na fila do produtor. */
+  production_approval: ProductionApproval
   scheduled_date: string
   client_id: number
   created_by_user_id: number
@@ -115,3 +117,19 @@ export function getOrderItemStatusLabel(status: string): string {
   return ORDER_ITEM_STATUS_LABELS[status] ?? status
 }
 
+export enum ProductionApproval {
+  AWAITING = 'Awaiting',
+  APPROVED = 'Approved',
+  RECUSED = 'Recused',
+}
+
+/** Rótulos em português para a liberação de produção */
+export const PRODUCTION_APPROVAL_LABELS: Record<string, string> = {
+  [ProductionApproval.AWAITING]: 'Aguardando aprovação',
+  [ProductionApproval.APPROVED]: 'Aprovado',
+  [ProductionApproval.RECUSED]: 'Recusado',
+}
+
+export function getProductionApprovalLabel(approval: string): string {
+  return PRODUCTION_APPROVAL_LABELS[approval] ?? approval
+}

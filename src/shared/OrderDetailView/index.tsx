@@ -14,7 +14,14 @@ import { ArrowBack as BackIcon } from '@mui/icons-material'
 import { ReactNode } from 'react'
 
 import { IOrder, getOrderItemStatusLabel } from 'interfaces/IOrder'
-import { PageLayout, StatusChip, PaymentChip, formatCurrency, productLabel } from 'shared'
+import {
+  PageLayout,
+  StatusChip,
+  PaymentChip,
+  ApprovalChip,
+  formatCurrency,
+  productLabel,
+} from 'shared'
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '-'
@@ -78,6 +85,7 @@ export const OrderDetailView = ({ order, onBack, actions, extraFields }: OrderDe
               Pedido #{order.id}
             </Typography>
             <StatusChip status={order.status} size="medium" />
+            <ApprovalChip approval={order.production_approval} size="medium" />
           </Box>
         </Box>
         {actions && <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>{actions}</Box>}

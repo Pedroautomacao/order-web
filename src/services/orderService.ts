@@ -16,11 +16,13 @@ class OrderService {
     scheduledDate?: string,
     page = 1,
     pageSize = 20,
+    productionApproval?: string,
   ): Promise<IPage<IOrder>> => {
     const params: Record<string, string | number> = { page, page_size: pageSize }
     if (search?.trim()) params.search = search.trim()
     if (status?.trim()) params.status = status.trim()
     if (scheduledDate?.trim()) params.scheduled_date = scheduledDate.trim()
+    if (productionApproval?.trim()) params.productionApproval = productionApproval.trim()
     return this.api.get('/orders', { params })
   }
 
@@ -54,6 +56,16 @@ class OrderService {
   /** Cancela um pedido (admin — order:cancel). */
   public cancelOrder = async (id: number): Promise<IOrder> => {
     return this.api.patch(`/orders/${id}/cancel`, {})
+  }
+
+  /** Libera o pedido para a fila de produção (order:approve_production). */
+  public approveProduction = async (id: number): Promise<IOrder> => {
+    return this.api.patch(`/orders/${id}/approve-production`, {})
+  }
+
+  /** Barra o pedido: sai da fila de produção (order:approve_production). */
+  public recuseProduction = async (id: number): Promise<IOrder> => {
+    return this.api.patch(`/orders/${id}/recuse-production`, {})
   }
 
   /** Prioriza um pedido: prioridade vira "A" (order:set_priority). */

@@ -17,6 +17,8 @@ export interface IDashboardOverview {
   completion_rate_today: number
   overdue_orders: number
   produced_not_billed: number
+  /** Pedidos travados esperando liberação de produção. */
+  awaiting_production_approval: number
   orders_by_day: IOrdersByDayPoint[]
 }
 

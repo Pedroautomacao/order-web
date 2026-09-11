@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Warning,
   Inventory2,
+  ThumbsUpDown,
 } from '@mui/icons-material'
 
 import dashboardService, { IDashboardOverview } from 'services/dashboardService'
@@ -52,6 +53,7 @@ const Dashboard = () => {
     data
       ? [
           { label: 'Aguardando', value: data.orders_today.awaiting, icon: <HourglassEmpty />, tone: 'neutral' },
+          { label: 'Aguardando Aprovação', value: data.awaiting_production_approval ?? 0, icon: <ThumbsUpDown />, tone: 'warning' },
           { label: 'Em Produção', value: data.orders_today.producing, icon: <Factory />, tone: 'warning' },
           { label: 'Produzidos Hoje', value: data.orders_today.produced, icon: <CheckCircle />, tone: 'success' },
           { label: 'Faturados', value: data.orders_today.billed, icon: <Payments />, tone: 'info' },
