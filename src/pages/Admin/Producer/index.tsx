@@ -164,6 +164,10 @@ const Producer = () => {
         title: 'Erro ao confirmar item',
         message: error?.detail || error?.message || 'Tente novamente.',
       })
+      // Mesmo tratamento dos outros passos: se o pedido foi cancelado no meio
+      // da produção, ele não volta em /producer/current e a tela se limpa
+      // sozinha, em vez de deixar o produtor batendo num pedido que morreu.
+      await loadCurrentOrder()
       // o item pode ter sido confirmado/resetado por outra tela: ressincroniza
       // em vez de deixar o produtor batendo num pedido que nao existe mais
       await loadCurrentOrder()
