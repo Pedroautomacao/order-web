@@ -125,7 +125,7 @@ export enum ProductionApproval {
 
 /** Rótulos em português para a liberação de produção */
 export const PRODUCTION_APPROVAL_LABELS: Record<string, string> = {
-  [ProductionApproval.AWAITING]: 'Aguardando aprovação',
+  [ProductionApproval.AWAITING]: 'Aguardando',
   [ProductionApproval.APPROVED]: 'Aprovado',
   [ProductionApproval.RECUSED]: 'Recusado',
 }

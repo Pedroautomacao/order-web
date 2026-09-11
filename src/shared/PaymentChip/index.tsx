@@ -10,6 +10,9 @@ interface PaymentChipProps {
   isPaid?: boolean
   /** Mostra também o chip Pago/Pendente ao lado. */
   showPaidStatus?: boolean
+  /** Mostra o chip da forma (À vista / A prazo). Desligue onde ela é ruído —
+   *  na listagem, por exemplo, a forma já aparece no detalhe do pedido. */
+  showMethod?: boolean
   size?: 'small' | 'medium'
 }
 
@@ -21,6 +24,7 @@ export const PaymentChip = ({
   method,
   isPaid,
   showPaidStatus = false,
+  showMethod = true,
   size = 'small',
 }: PaymentChipProps) => {
   const isCredit = method === PaymentMethod.CREDIT
@@ -31,12 +35,14 @@ export const PaymentChip = ({
 
   return (
     <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-      <Chip
-        icon={isCredit ? <Schedule /> : <Payments />}
-        label={getPaymentMethodLabel(method)}
-        size={size}
-        sx={{ color: methodColor, backgroundColor: methodBg, fontWeight: 600 }}
-      />
+      {showMethod && (
+        <Chip
+          icon={isCredit ? <Schedule /> : <Payments />}
+          label={getPaymentMethodLabel(method)}
+          size={size}
+          sx={{ color: methodColor, backgroundColor: methodBg, fontWeight: 600 }}
+        />
+      )}
       {showPaidStatus &&
         (isPaid ? (
           <Chip

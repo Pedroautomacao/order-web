@@ -275,18 +275,20 @@ const Orders = () => {
     {
       field: 'production_approval',
       headerName: 'Produção',
-      width: 180,
+      width: 150,
       renderCell: (params) => <ApprovalChip approval={params.row.production_approval} />,
     },
     {
       field: 'payment_method',
       headerName: 'Pagamento',
-      width: 190,
+      width: 120,
       renderCell: (params) => (
+        // só a situação: a forma (À vista / A prazo) já aparece no detalhe
         <PaymentChip
           method={params.row.payment_method}
           isPaid={params.row.is_paid}
           showPaidStatus
+          showMethod={false}
         />
       ),
     },

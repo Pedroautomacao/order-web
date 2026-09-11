@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button } from '@mui/material'
 import {
   Paid as PaidIcon,
   CheckCircle as ApproveIcon,
@@ -10,7 +9,8 @@ import {
 import orderService from 'services/orderService'
 import { IOrder, OrderStatus, PaymentMethod, ProductionApproval } from 'interfaces/IOrder'
 import { usePopup } from 'hooks/usePopup'
-import { ConfirmDialog, LoadingState, OrderDetailView } from 'shared'
+import { ActionsMenu, ConfirmDialog, LoadingState, OrderDetailView } from 'shared'
+import type { ActionItem } from 'shared'
 
 const OrderDetail = () => {
   const { id } = useParams<{ id: string }>()
@@ -103,48 +103,46 @@ const OrderDetail = () => {
   const canRecuse =
     podeDecidirProducao && order.production_approval !== ProductionApproval.RECUSED
 
+  // Uma lista suspensa em vez de botões soltos: eram até três lado a lado,
+  // quebrando em duas linhas no cabeçalho.
+  const acoes: ActionItem[] = []
+
+  if (canApprove)
+    acoes.push({
+      key: 'approve',
+      label: 'Aprovar produção',
+      icon: <ApproveIcon />,
+      color: 'success',
+      disabled: decidindo,
+      onClick: () => setConfirmando('approve'),
+    })
+
+  if (canRecuse)
+    acoes.push({
+      key: 'recuse',
+      label: 'Recusar produção',
+      icon: <RecuseIcon />,
+      color: 'error',
+      disabled: decidindo,
+      onClick: () => setConfirmando('recuse'),
+    })
+
+  if (canMarkPaid)
+    acoes.push({
+      key: 'pay',
+      label: paying ? 'Salvando...' : 'Marcar como pago',
+      icon: <PaidIcon />,
+      disabled: paying,
+      dividerBefore: acoes.length > 0,
+      onClick: handleMarkPaid,
+    })
+
   return (
     <>
       <OrderDetailView
         order={order}
         onBack={() => navigate('/admin/orders')}
-        actions={
-          <>
-            {canApprove && (
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<ApproveIcon />}
-                onClick={() => setConfirmando('approve')}
-                disabled={decidindo}
-              >
-                Aprovar produção
-              </Button>
-            )}
-            {canRecuse && (
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<RecuseIcon />}
-                onClick={() => setConfirmando('recuse')}
-                disabled={decidindo}
-              >
-                Recusar produção
-              </Button>
-            )}
-            {canMarkPaid && (
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<PaidIcon />}
-                onClick={handleMarkPaid}
-                disabled={paying}
-              >
-                {paying ? 'Salvando...' : 'Marcar como pago'}
-              </Button>
-            )}
-          </>
-        }
+        actions={<ActionsMenu items={acoes} />}
       />
 
       <ConfirmDialog
