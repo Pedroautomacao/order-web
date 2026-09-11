@@ -9,7 +9,7 @@ import {
 import { GridColDef, GridActionsCellItem } from '@mui/x-data-grid'
 
 import userService from 'services/userService'
-import { IUser } from 'interfaces/IUser'
+import { IUser, getRoleDisplayName } from 'interfaces/IUser'
 import { usePopup } from 'hooks/usePopup'
 import { useDebouncedSearch } from 'hooks/useDebounce'
 import UserModal from './UserModal'
@@ -107,7 +107,9 @@ const Users = () => {
       field: 'roles',
       headerName: 'Perfis',
       width: 150,
-      valueGetter: (params) => params.row.roles?.map((r: { name: string }) => r.name).join(', ') || '-',
+      valueGetter: (params) =>
+        params.row.roles?.map((r: { name: string }) => getRoleDisplayName(r.name)).join(', ') ||
+        '-',
     },
     {
       field: 'is_active',

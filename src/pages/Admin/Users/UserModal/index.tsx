@@ -23,9 +23,16 @@ import * as Yup from 'yup'
 import { passwordSchema, PASSWORD_HELP } from 'shared/validation/password'
 
 import userService from 'services/userService'
-import { IUser, IUserCreate, IUserUpdate, IRole, ROLE_DISPLAY_NAMES } from 'interfaces/IUser'
+import { IUser, IUserCreate, IUserUpdate, IRole, getRoleDisplayName } from 'interfaces/IUser'
 import { usePopup } from 'hooks/usePopup'
 import { applyCpfCnpjMask, removeMask } from 'utils/maskUtils'
+
+/**
+ * O perfil Tech é oculto na UI e atribuído à mão. A comparação ignora a caixa
+ * porque o banco tem 'tech' e 'Tech' — com a checagem exata, o Tech maiúsculo
+ * escapava do filtro e aparecia na lista.
+ */
+const ehTech = (role: { name: string }) => role.name?.toLowerCase() === 'tech'
 
 interface UserModalProps {
   open: boolean
@@ -143,7 +150,7 @@ const UserModal = ({ open, onClose, onSave, user }: UserModalProps) => {
         is_active: user.is_active,
         password: '',
       })
-      setSelectedRoleIds(user.roles?.filter((r) => r.name !== 'tech').map((r) => r.id) ?? [])
+      setSelectedRoleIds(user.roles?.filter((r) => !ehTech(r)).map((r) => r.id) ?? [])
     } else {
       createForm.reset({
         username: '',
@@ -162,7 +169,7 @@ const UserModal = ({ open, onClose, onSave, user }: UserModalProps) => {
     if (!open) return
     userService
       .getRoles()
-      .then((list) => setRoles(list.filter((r) => r.name !== 'tech')))
+      .then((list) => setRoles(list.filter((r) => !ehTech(r))))
       .catch(() => setRoles([]))
   }, [open])
 
@@ -357,7 +364,7 @@ const UserModal = ({ open, onClose, onSave, user }: UserModalProps) => {
                         }}
                       />
                     }
-                    label={ROLE_DISPLAY_NAMES[role.name] ?? role.name}
+                    label={getRoleDisplayName(role.name)}
                   />
                 ))}
               </FormGroup>

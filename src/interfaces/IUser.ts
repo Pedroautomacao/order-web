@@ -77,6 +77,18 @@ export const ROLE_DISPLAY_NAMES: Record<string, string> = {
   tech: 'Tech',
 }
 
+/**
+ * Rótulo do perfil. O nome no banco é chave de negócio — as migrations
+ * comparam por ele — então a tradução acontece só na exibição.
+ *
+ * A busca ignora a caixa porque os nomes divergem entre migrations: existem
+ * 'tech' e 'Tech' no mesmo banco. E cai no nome cru quando não há tradução,
+ * que é o caso dos perfis criados pela própria tela.
+ */
+export function getRoleDisplayName(name: string): string {
+  return ROLE_DISPLAY_NAMES[name] ?? ROLE_DISPLAY_NAMES[name?.toLowerCase()] ?? name
+}
+
 /** Rótulos em português para permissões (ex.: ao criar grupos de menu) */
 export const PERMISSION_LABELS_PT: Record<string, string> = {
   'client:read': 'Visualizar/listar clientes',

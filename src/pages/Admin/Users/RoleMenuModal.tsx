@@ -20,7 +20,13 @@ import {
   useTheme,
 } from '@mui/material'
 import { Add as AddIcon, Edit as EditIcon } from '@mui/icons-material'
-import { IRole, IMenuGroup, IPermission, PERMISSION_LABELS_PT } from 'interfaces/IUser'
+import {
+  IRole,
+  IMenuGroup,
+  IPermission,
+  PERMISSION_LABELS_PT,
+  getRoleDisplayName,
+} from 'interfaces/IUser'
 import userService from 'services/userService'
 import { usePopup } from 'hooks/usePopup'
 
@@ -273,11 +279,18 @@ export default function RoleMenuModal({ open, onClose }: RoleMenuModalProps) {
                   {roles.map((role) => (
                     <ListItem key={role.id} sx={LINHA_SX}>
                       <ListItemText
-                        primary={role.name}
+                        primary={getRoleDisplayName(role.name)}
                         secondary={
-                          role.menu_groups?.length
-                            ? role.menu_groups.map((g) => g.name).join(', ')
-                            : 'Nenhum menu'
+                          // o nome cru aparece quando difere do rótulo: é ele
+                          // que o botão Editar abre para renomear
+                          [
+                            getRoleDisplayName(role.name) !== role.name ? role.name : null,
+                            role.menu_groups?.length
+                              ? role.menu_groups.map((g) => g.name).join(', ')
+                              : 'Nenhum menu',
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')
                         }
                         sx={{ my: 0, pr: 1 }}
                       />
