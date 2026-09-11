@@ -14,7 +14,8 @@ export interface IProduct {
 export interface IProductCreate {
   name: string
   description?: string
-  sku: string
+  /** Omitido pela tela: o backend gera a partir do id do produto. */
+  sku?: string
   isActive?: boolean
   unitPrice: number
   unitOfMeasureId: number

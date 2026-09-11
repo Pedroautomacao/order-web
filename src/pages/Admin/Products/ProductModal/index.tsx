@@ -207,10 +207,12 @@ const ProductModal = ({ open, onClose, onSave, product, units }: ProductModalPro
             {productData && (
               <TextField
                 label="SKU"
-                value={productData.id}
+                // o sku de verdade, não o id: produto antigo tem código de
+                // negócio (BOV-PIC) e mostrar o id ali era mentira
+                value={productData.sku ?? productData.id}
                 fullWidth
                 disabled
-                helperText="O SKU é o ID do produto e não pode ser alterado"
+                helperText="Gerado automaticamente e não pode ser alterado"
               />
             )}
 
@@ -227,7 +229,7 @@ const ProductModal = ({ open, onClose, onSave, product, units }: ProductModalPro
                   >
                     {units.map(unit => (
                       <MenuItem key={unit.id} value={unit.id}>
-                        {unit.code} - {unit.description || unit.code}
+                        {unit.code} - {unit.name || unit.description || unit.code}
                       </MenuItem>
                     ))}
                   </Select>
