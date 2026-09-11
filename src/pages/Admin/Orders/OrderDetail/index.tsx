@@ -4,12 +4,25 @@ import {
   Paid as PaidIcon,
   CheckCircle as ApproveIcon,
   Block as RecuseIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material'
 
 import orderService from 'services/orderService'
-import { IOrder, OrderStatus, PaymentMethod, ProductionApproval } from 'interfaces/IOrder'
+import {
+  IOrder,
+  IOrderItemCreate,
+  OrderStatus,
+  PaymentMethod,
+  ProductionApproval,
+} from 'interfaces/IOrder'
 import { usePopup } from 'hooks/usePopup'
-import { ActionsMenu, ConfirmDialog, LoadingState, OrderDetailView } from 'shared'
+import {
+  ActionsMenu,
+  ConfirmDialog,
+  LoadingState,
+  OrderDetailView,
+  OrderItemsEditModal,
+} from 'shared'
 import type { ActionItem } from 'shared'
 
 const OrderDetail = () => {
@@ -21,6 +34,8 @@ const OrderDetail = () => {
   const [paying, setPaying] = useState(false)
   const [confirmando, setConfirmando] = useState<'approve' | 'recuse' | null>(null)
   const [decidindo, setDecidindo] = useState(false)
+  const [editando, setEditando] = useState(false)
+  const [salvandoItens, setSalvandoItens] = useState(false)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -85,6 +100,33 @@ const OrderDetail = () => {
     }
   }
 
+  const salvarItens = async (items: IOrderItemCreate[]) => {
+    if (!order) return
+    setSalvandoItens(true)
+    try {
+      // cliente e data seguem como estão: o modal mexe só nos itens, mas o
+      // contrato do PUT exige o pedido inteiro
+      setOrder(
+        await orderService.updateOrder(order.id, {
+          clientId: order.client?.id ?? order.client_id,
+          scheduledDate: order.scheduled_date,
+          paymentMethod: order.payment_method as PaymentMethod,
+          items,
+        }),
+      )
+      addPopup({ type: 'success', title: 'Pedido atualizado' })
+      setEditando(false)
+    } catch (error: any) {
+      addPopup({
+        type: 'error',
+        title: 'Erro ao atualizar pedido',
+        message: error?.detail || error?.message || 'Tente novamente.',
+      })
+    } finally {
+      setSalvandoItens(false)
+    }
+  }
+
   if (loading) return <LoadingState minHeight="60vh" />
   if (!order) return null
 
@@ -105,7 +147,18 @@ const OrderDetail = () => {
 
   // Uma lista suspensa em vez de botões soltos: eram até três lado a lado,
   // quebrando em duas linhas no cabeçalho.
+  // Editar itens: mesma regra do backend, só pedido em Aguardando
+  const canEditItems = order.status === OrderStatus.AWAITING
+
   const acoes: ActionItem[] = []
+
+  if (canEditItems)
+    acoes.push({
+      key: 'edit',
+      label: 'Editar itens e valores',
+      icon: <EditIcon />,
+      onClick: () => setEditando(true),
+    })
 
   if (canApprove)
     acoes.push({
@@ -143,6 +196,14 @@ const OrderDetail = () => {
         order={order}
         onBack={() => navigate('/admin/orders')}
         actions={<ActionsMenu items={acoes} />}
+      />
+
+      <OrderItemsEditModal
+        open={editando}
+        order={order}
+        submitting={salvandoItens}
+        onClose={() => setEditando(false)}
+        onSubmit={salvarItens}
       />
 
       <ConfirmDialog

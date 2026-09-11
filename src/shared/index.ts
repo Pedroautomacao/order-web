@@ -23,6 +23,7 @@ export type { BarChartPoint } from 'shared/BarChart'
 export { default as FormModal } from 'shared/FormModal'
 export { default as ChangePasswordModal } from 'shared/ChangePasswordModal'
 export { default as OrderFormModal } from 'shared/OrderFormModal'
+export { default as OrderItemsEditModal } from 'shared/OrderItemsEditModal'
 export { default as OrderDetailView } from 'shared/OrderDetailView'
 
 export { LoadingState, EmptyState } from 'shared/states'

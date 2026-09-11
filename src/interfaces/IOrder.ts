@@ -44,6 +44,10 @@ export interface IOrderItem {
   produced_quantity: number | null
   status: OrderItemStatus
   product?: IProduct
+  /** Preço congelado na criação do pedido — não acompanha o preço do produto. */
+  unit_price: number | string
+  /** Valor da linha: preço congelado × quantidade. */
+  total_price: number | string
 }
 
 export interface IOrderCreate {
@@ -63,6 +67,8 @@ export interface IOrderUpdate {
 export interface IOrderItemCreate {
   product_id: number
   quantity: number
+  /** Preço exclusivo deste pedido. Omitido = preço de tabela do produto. */
+  unitPrice?: number
 }
 
 export enum PaymentMethod {

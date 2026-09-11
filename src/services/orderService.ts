@@ -48,6 +48,11 @@ class OrderService {
     return this.api.post('/orders', data)
   }
 
+  /** Edita o pedido: itens, quantidades e preço cobrado (order:update). */
+  public updateOrder = async (id: number, data: IOrderUpdate): Promise<IOrder> => {
+    return this.api.put(`/orders/${id}`, data)
+  }
+
   /** Marca um pedido como pago (somente admin — order:mark_paid). */
   public markOrderPaid = async (id: number): Promise<IOrder> => {
     return this.api.patch(`/orders/${id}/pay`, {})

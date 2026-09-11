@@ -13,7 +13,7 @@ import {
 import { ArrowBack as BackIcon } from '@mui/icons-material'
 import { ReactNode } from 'react'
 
-import { IOrder, getOrderItemStatusLabel } from 'interfaces/IOrder'
+import { IOrder, IOrderItem, getOrderItemStatusLabel } from 'interfaces/IOrder'
 import {
   PageLayout,
   StatusChip,
@@ -32,6 +32,17 @@ const formatQuantity = (value: number | null | undefined, unitCode?: string | nu
   if (value == null) return '-'
   return unitCode ? `${value} ${unitCode}` : String(value)
 }
+
+/**
+ * Valor unitário congelado na criação do pedido. O fallback cobre a janela de
+ * deploy em que o front sobe antes da API que passou a devolver o campo — sem
+ * ele a coluna mostraria "R$ 0,00", que seria mentira, e não um traço.
+ */
+const precoDoItem = (item: IOrderItem) =>
+  item.unit_price == null ? '-' : formatCurrency(item.unit_price)
+
+const totalDoItem = (item: IOrderItem) =>
+  item.total_price == null ? '-' : formatCurrency(item.total_price)
 
 const Field = ({ label, value }: { label: string; value: ReactNode }) => (
   <Box>
@@ -121,7 +132,9 @@ export const OrderDetailView = ({ order, onBack, actions, extraFields }: OrderDe
             <TableHead>
               <TableRow>
                 <TableCell>Produto</TableCell>
+                <TableCell align="right">Valor unit.</TableCell>
                 <TableCell align="right">Quantidade</TableCell>
+                <TableCell align="right">Total</TableCell>
                 <TableCell align="right">Produzido</TableCell>
                 <TableCell>Status</TableCell>
               </TableRow>
@@ -129,7 +142,7 @@ export const OrderDetailView = ({ order, onBack, actions, extraFields }: OrderDe
             <TableBody>
               {allItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">
+                  <TableCell colSpan={6} align="center">
                     Nenhum item
                   </TableCell>
                 </TableRow>
@@ -137,9 +150,11 @@ export const OrderDetailView = ({ order, onBack, actions, extraFields }: OrderDe
                 allItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>{productLabel(item.product)}</TableCell>
+                    <TableCell align="right">{precoDoItem(item)}</TableCell>
                     <TableCell align="right">
                       {formatQuantity(item.quantity, item.product?.unit?.code)}
                     </TableCell>
+                    <TableCell align="right">{totalDoItem(item)}</TableCell>
                     <TableCell align="right">
                       {formatQuantity(item.produced_quantity, item.product?.unit?.code)}
                     </TableCell>
